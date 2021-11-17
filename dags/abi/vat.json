@@ -1,0 +1,346 @@
+{
+    "0x1a0b287e": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "i",
+          "type": "bstring"
+        },
+        {
+          "dynamic": false,
+          "name": "what",
+          "type": "bstring"
+        },
+        {
+          "dynamic": false,
+          "name": "data",
+          "type": "uint256"
+        }
+      ],
+      "name": "file_ilk",
+      "outputs": [],
+      "signature": "0x1a0b287e"
+    },
+    "0x29ae8114": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "what",
+          "type": "bstring"
+        },
+        {
+          "dynamic": false,
+          "name": "data",
+          "type": "uint256"
+        }
+      ],
+      "name": "file_vat",
+      "outputs": [],
+      "signature": "0x29ae8114"
+    },
+    "0x3b663195": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "i",
+          "type": "bstring"
+        }
+      ],
+      "name": "init",
+      "outputs": [],
+      "signature": "0x3b663195"
+    },
+    "0x6111be2e": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "ilk",
+          "type": "bstring"
+        },
+        {
+          "dynamic": false,
+          "name": "src",
+          "type": "address"
+        },
+        {
+          "dynamic": false,
+          "name": "dst",
+          "type": "address"
+        },
+        {
+          "dynamic": false,
+          "name": "wad",
+          "type": "uint256"
+        }
+      ],
+      "name": "flux",
+      "outputs": [],
+      "signature": "0x6111be2e"
+    },
+    "0x65fae35e": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "usr",
+          "type": "address"
+        }
+      ],
+      "name": "rely",
+      "outputs": [],
+      "signature": "0x65fae35e"
+    },
+    "0x69245009": {
+      "inputs": [],
+      "name": "cage",
+      "outputs": [],
+      "signature": "0x69245009"
+    },
+    "0x76088703": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "i",
+          "type": "bstring"
+        },
+        {
+          "dynamic": false,
+          "name": "u",
+          "type": "address"
+        },
+        {
+          "dynamic": false,
+          "name": "v",
+          "type": "address"
+        },
+        {
+          "dynamic": false,
+          "name": "w",
+          "type": "address"
+        },
+        {
+          "dynamic": false,
+          "name": "dink",
+          "type": "int256"
+        },
+        {
+          "dynamic": false,
+          "name": "dart",
+          "type": "int256"
+        }
+      ],
+      "name": "frob",
+      "outputs": [],
+      "signature": "0x76088703"
+    },
+    "0x7bab3f40": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "i",
+          "type": "bstring"
+        },
+        {
+          "dynamic": false,
+          "name": "u",
+          "type": "address"
+        },
+        {
+          "dynamic": false,
+          "name": "v",
+          "type": "address"
+        },
+        {
+          "dynamic": false,
+          "name": "w",
+          "type": "address"
+        },
+        {
+          "dynamic": false,
+          "name": "dink",
+          "type": "int256"
+        },
+        {
+          "dynamic": false,
+          "name": "dart",
+          "type": "int256"
+        }
+      ],
+      "name": "grab",
+      "outputs": [],
+      "signature": "0x7bab3f40"
+    },
+    "0x7cdd3fde": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "ilk",
+          "type": "bstring"
+        },
+        {
+          "dynamic": false,
+          "name": "usr",
+          "type": "address"
+        },
+        {
+          "dynamic": false,
+          "name": "wad",
+          "type": "int256"
+        }
+      ],
+      "name": "slip",
+      "outputs": [],
+      "signature": "0x7cdd3fde"
+    },
+    "0x870c616d": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "i",
+          "type": "bstring"
+        },
+        {
+          "dynamic": false,
+          "name": "src",
+          "type": "address"
+        },
+        {
+          "dynamic": false,
+          "name": "dst",
+          "type": "address"
+        },
+        {
+          "dynamic": false,
+          "name": "dink",
+          "type": "int256"
+        },
+        {
+          "dynamic": false,
+          "name": "dart",
+          "type": "int256"
+        }
+      ],
+      "name": "fork",
+      "outputs": [],
+      "signature": "0x870c616d"
+    },
+    "0x9c52a7f1": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "usr",
+          "type": "address"
+        }
+      ],
+      "name": "deny",
+      "outputs": [],
+      "signature": "0x9c52a7f1"
+    },
+    "0xa3b22fc4": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "usr",
+          "type": "address"
+        }
+      ],
+      "name": "hope",
+      "outputs": [],
+      "signature": "0xa3b22fc4"
+    },
+    "0xb65337df": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "i",
+          "type": "bstring"
+        },
+        {
+          "dynamic": false,
+          "name": "u",
+          "type": "address"
+        },
+        {
+          "dynamic": false,
+          "name": "rate",
+          "type": "int256"
+        }
+      ],
+      "name": "fold",
+      "outputs": [],
+      "signature": "0xb65337df"
+    },
+    "0xbb35783b": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "src",
+          "type": "address"
+        },
+        {
+          "dynamic": false,
+          "name": "dst",
+          "type": "address"
+        },
+        {
+          "dynamic": false,
+          "name": "rad",
+          "type": "uint256"
+        }
+      ],
+      "name": "move",
+      "outputs": [],
+      "signature": "0xbb35783b"
+    },
+    "0xdc4d20fa": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "usr",
+          "type": "address"
+        }
+      ],
+      "name": "nope",
+      "outputs": [],
+      "signature": "0xdc4d20fa"
+    },
+    "0xf24e23eb": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "u",
+          "type": "address"
+        },
+        {
+          "dynamic": false,
+          "name": "v",
+          "type": "address"
+        },
+        {
+          "dynamic": false,
+          "name": "rad",
+          "type": "uint256"
+        }
+      ],
+      "name": "suck",
+      "outputs": [],
+      "signature": "0xf24e23eb"
+    },
+    "0xf37ac61c": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "rad",
+          "type": "uint256"
+        }
+      ],
+      "name": "heal",
+      "outputs": [],
+      "signature": "0xf37ac61c"
+    },
+    "constructor": {
+      "inputs": [],
+      "name": "constructor",
+      "outputs": [],
+      "signature": "constructor"
+    }
+}

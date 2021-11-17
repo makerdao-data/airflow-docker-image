@@ -1,0 +1,81 @@
+{
+    "0x0b63fb62": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "cdp",
+          "type": "uint256"
+        },
+        {
+          "dynamic": false,
+          "name": "usr",
+          "type": "address"
+        },
+        {
+          "dynamic": false,
+          "name": "ok",
+          "type": "uint256"
+        }
+      ],
+      "name": "cdp_allow",
+      "outputs": [],
+      "signature": "0x0b63fb62"
+    },
+    "0x6090dec5": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "ilk",
+          "type": "bstring"
+        },
+        {
+          "dynamic": false,
+          "name": "usr",
+          "type": "address"
+        }
+      ],
+      "name": "open",
+      "outputs": [
+        {
+          "dynamic": false,
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "signature": "0x6090dec5"
+    },
+    "0xb68f4004": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "usr",
+          "type": "address"
+        },
+        {
+          "dynamic": false,
+          "name": "ok",
+          "type": "uint256"
+        }
+      ],
+      "name": "urn_allow",
+      "outputs": [],
+      "signature": "0xb68f4004"
+    },
+    "0xfcafcc68": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "cdp",
+          "type": "uint256"
+        },
+        {
+          "dynamic": false,
+          "name": "dst",
+          "type": "address"
+        }
+      ],
+      "name": "give",
+      "outputs": [],
+      "signature": "0xfcafcc68"
+    }
+  }

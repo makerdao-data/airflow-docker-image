@@ -127,3 +127,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+mcd-265409-7bbf3d7082b4.json
+quickstart-1587209627813-93a59c68f68e.json
+
+# logs
+logs/
+

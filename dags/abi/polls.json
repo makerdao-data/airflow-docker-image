@@ -1,0 +1,58 @@
+{
+    "0x603af06f": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "pollId",
+          "type": "uint256"
+        }
+      ],
+      "name": "withdrawPoll",
+      "outputs": [],
+      "signature": "0x603af06f"
+    },
+    "0xb384abef": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "pollId",
+          "type": "uint256"
+        },
+        {
+          "dynamic": false,
+          "name": "optionId",
+          "type": "uint256"
+        }
+      ],
+      "name": "vote",
+      "outputs": [],
+      "signature": "0xb384abef"
+    },
+    "0xd54a8176": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "startDate",
+          "type": "uint256"
+        },
+        {
+          "dynamic": false,
+          "name": "endDate",
+          "type": "uint256"
+        },
+        {
+          "dynamic": true,
+          "name": "multiHash",
+          "type": "string"
+        },
+        {
+          "dynamic": true,
+          "name": "url",
+          "type": "string"
+        }
+      ],
+      "name": "createPoll",
+      "outputs": [],
+      "signature": "0xd54a8176"
+    }
+  }

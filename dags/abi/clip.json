@@ -1,0 +1,493 @@
+{
+	"0x15232515": {
+		"inputs": [],
+		"name": "buf",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0x8033d581": {
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "active",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0x96f1b6be": {
+		"inputs": [],
+		"name": "calc",
+		"outputs": [
+			{
+				"internalType": "contract AbacusLike",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0xb61500e4": {
+		"inputs": [],
+		"name": "chip",
+		"outputs": [
+			{
+				"internalType": "uint64",
+				"name": "",
+				"type": "uint64"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0xba2cdc75": {
+		"inputs": [],
+		"name": "chost",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0x06661abd": {
+		"inputs": [],
+		"name": "count",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0x49ed5931": {
+		"inputs": [],
+		"name": "cusp",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0x9c52a7f1": {
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "usr",
+				"type": "address"
+			}
+		],
+		"name": "deny",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	"0xc3b3ad7f": {
+		"inputs": [],
+		"name": "dog",
+		"outputs": [
+			{
+				"internalType": "contract DogLike",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0xd4e8be83": {
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "what",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint256",
+				"name": "data",
+				"type": "uint256"
+			}
+		],
+		"name": "file",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	"0x29ae8114": {
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "what",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "address",
+				"name": "data",
+				"type": "address"
+			}
+		],
+		"name": "file",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	"0x5c622a0e": {
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "id",
+				"type": "uint256"
+			}
+		],
+		"name": "getStatus",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "needsRedo",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint256",
+				"name": "price",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "lot",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tab",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0xc5ce281e": {
+		"inputs": [],
+		"name": "ilk",
+		"outputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0x898eb267": {
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "tab",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "lot",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "usr",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "kpr",
+				"type": "address"
+			}
+		],
+		"name": "kick",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "id",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	"0xcfdd3302": {
+		"inputs": [],
+		"name": "kicks",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0x0f560cd7": {
+		"inputs": [],
+		"name": "list",
+		"outputs": [
+			{
+				"internalType": "uint256[]",
+				"name": "",
+				"type": "uint256[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0xd843416d": {
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "id",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "kpr",
+				"type": "address"
+			}
+		],
+		"name": "redo",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	"0x65fae35e": {
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "usr",
+				"type": "address"
+			}
+		],
+		"name": "rely",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	"0xb5f522f7": {
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "sales",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "pos",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "tab",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "lot",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "usr",
+				"type": "address"
+			},
+			{
+				"internalType": "uint96",
+				"name": "tic",
+				"type": "uint96"
+			},
+			{
+				"internalType": "uint256",
+				"name": "top",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0x2e77468d": {
+		"inputs": [],
+		"name": "spotter",
+		"outputs": [
+			{
+				"internalType": "contract SpotterLike",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0x75f12b21": {
+		"inputs": [],
+		"name": "stopped",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0x13d8c840": {
+		"inputs": [],
+		"name": "tail",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0x81a794cb": {
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "id",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amt",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "max",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "who",
+				"type": "address"
+			},
+			{
+				"internalType": "bytes",
+				"name": "data",
+				"type": "bytes"
+			}
+		],
+		"name": "take",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	"0x2755cd2d": {
+		"inputs": [],
+		"name": "tip",
+		"outputs": [
+			{
+				"internalType": "uint192",
+				"name": "",
+				"type": "uint192"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0x0cbb5862": {
+		"inputs": [],
+		"name": "upchost",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	"0x36569e77": {
+		"inputs": [],
+		"name": "vat",
+		"outputs": [
+			{
+				"internalType": "contract VatLike",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0x626cb3c5": {
+		"inputs": [],
+		"name": "vow",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0xbf353dbb": {
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "wards",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0x26e027f1": {
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "id",
+				"type": "uint256"
+			}
+		],
+		"name": "yank",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	}
+}

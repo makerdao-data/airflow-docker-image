@@ -1,0 +1,301 @@
+{
+	"0x69245009": {
+		"inputs": [],
+		"name": "cage",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	"0xeda6e121": {
+		"inputs": [],
+		"name": "Dirt",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0xaf7cfeb1": {
+		"inputs": [],
+		"name": "Hole",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0xed998908": {
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "ilk",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "address",
+				"name": "urn",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "kpr",
+				"type": "address"
+			}
+		],
+		"name": "bark",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "id",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	"0xd7926538": {
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "ilk",
+				"type": "bytes32"
+			}
+		],
+		"name": "chop",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0x9c52a7f1": {
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "usr",
+				"type": "address"
+			}
+		],
+		"name": "deny",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	"0xc87193f4": {
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "ilk",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint256",
+				"name": "rad",
+				"type": "uint256"
+			}
+		],
+		"name": "digs",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	"0xd4e8be83": {
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "ilk",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "what",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint256",
+				"name": "data",
+				"type": "uint256"
+			}
+		],
+		"name": "file",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	"0xebecb39d": {
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "what",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "uint256",
+				"name": "data",
+				"type": "uint256"
+			}
+		],
+		"name": "file",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	"0x1a0b287e": {
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "what",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "address",
+				"name": "data",
+				"type": "address"
+			}
+		],
+		"name": "file",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	"0x29ae8114": {
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "ilk",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "what",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "address",
+				"name": "clip",
+				"type": "address"
+			}
+		],
+		"name": "file",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	"0xd9638d36": {
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "",
+				"type": "bytes32"
+			}
+		],
+		"name": "ilks",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "clip",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "chop",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "hole",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "dirt",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0x957aa58c": {
+		"inputs": [],
+		"name": "live",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0x65fae35e": {
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "usr",
+				"type": "address"
+			}
+		],
+		"name": "rely",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	"0x36569e77": {
+		"inputs": [],
+		"name": "vat",
+		"outputs": [
+			{
+				"internalType": "contract VatLike",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0x626cb3c5": {
+		"inputs": [],
+		"name": "vow",
+		"outputs": [
+			{
+				"internalType": "contract VowLike",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	"0xbf353dbb": {
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "wards",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+}

@@ -1,0 +1,86 @@
+{
+    "0x3c278bd5": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "whom",
+          "type": "address"
+        }
+      ],
+      "name": "lift",
+      "outputs": [],
+      "signature": "0x3c278bd5"
+    },
+    "0x5123e1fa": {
+      "inputs": [
+        {
+          "dynamic": true,
+          "name": "yays",
+          "type": "address[]"
+        }
+      ],
+      "name": "etch",
+      "outputs": [
+        {
+          "dynamic": false,
+          "name": "slate",
+          "type": "bytes32"
+        }
+      ],
+      "signature": "0x5123e1fa"
+    },
+    "0xa69beaba": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "slate",
+          "type": "bytes32"
+        }
+      ],
+      "name": "vote",
+      "outputs": [],
+      "signature": "0xa69beaba"
+    },
+    "0xd8ccd0f3": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "wad",
+          "type": "uint256"
+        }
+      ],
+      "name": "free",
+      "outputs": [],
+      "signature": "0xd8ccd0f3"
+    },
+    "0xdd467064": {
+      "inputs": [
+        {
+          "dynamic": false,
+          "name": "wad",
+          "type": "uint256"
+        }
+      ],
+      "name": "lock",
+      "outputs": [],
+      "signature": "0xdd467064"
+    },
+    "0xed081329": {
+      "inputs": [
+        {
+          "dynamic": true,
+          "name": "yays",
+          "type": "address[]"
+        }
+      ],
+      "name": "vote_new",
+      "outputs": [
+        {
+          "dynamic": false,
+          "name": "",
+          "type": "bytes32"
+        }
+      ],
+      "signature": "0xed081329"
+    }
+  }
