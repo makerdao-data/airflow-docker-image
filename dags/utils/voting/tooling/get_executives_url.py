@@ -15,7 +15,7 @@ def _get_executives_url():
 
     driver = webdriver.Remote(
         options=options,
-        command_executor="new-snowflake-airflow-docker-image_selenium_1:4444/wd/hub",
+        command_executor="airflow-docker-image_selenium_1:4444/wd/hub",
         desired_capabilities=caps,
     )
 
