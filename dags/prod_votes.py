@@ -25,7 +25,7 @@ from dags.utils.voting.voting_power_cache import _voting_power_cache
 # You can override them on a per-task basis during operator initialization
 default_args = {
     "owner": "airflow",
-    "email": ["piotr.m.klis@gmail.com", "karol@tokenflow.live"],
+    "email": ['piotr.m.klis@gmail.com'],
     "email_on_failure": True,
     "retries": 0,
     "retry_delay": timedelta(minutes=1),

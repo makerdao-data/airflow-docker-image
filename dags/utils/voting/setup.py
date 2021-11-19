@@ -61,6 +61,9 @@ def _setup(environment):
         end_block = last_block[0][0]
         end_time = last_block[0][1]
 
+    end_block = 8253528
+    end_time = '2019-07-30 18:12:33'
+
     with open(absolute_import_path + 'chief.json', 'r') as fp:
         chief_abi = json.load(fp)
 

@@ -86,7 +86,7 @@ def _load(chief, polls, api_polls, executives, votes, operations, **setup):
                 transaction_write_to_table(
                     sf,
                     f"{setup['votes_db']}.staging.votes_extracts",
-                    f"{setup['votes_db']}.internal.gov_operations",
+                    f"{setup['votes_db']}.operations.vote",
                     pattern,
                 )
                 transaction_clear_stage(sf, f"{setup['votes_db']}.staging.votes_extracts", pattern)

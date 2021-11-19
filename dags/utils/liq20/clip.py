@@ -15,7 +15,7 @@ import os, sys
 
 sys.path.append('/opt/airflow/')
 from dags.utils.bq_adapters import decode_calls
-from connectors.sf import sf, custom_write_to_stage, write_to_table
+from connectors.sf import sf, _write_to_stage, _write_to_table, _clear_stage
 
 
 def get_clipper_calls(load_id, start_block, end_block, start_time, end_time, DB, STAGING):
@@ -42,8 +42,16 @@ def get_clipper_calls(load_id, start_block, end_block, start_time, end_time, DB,
         )
 
         if len(clipper_calls) > 0:
-            if custom_write_to_stage(clipper_calls, f"{DB}.staging.{STAGING}"):
-                write_to_table(f"{DB}.staging.{STAGING}", f"{DB}.staging.clip")
+            
+            pattern = _write_to_stage(sf, clipper_calls, f"{DB}.staging.liquidations_extracts")
+            if pattern:
+                _write_to_table(
+                    sf,
+                    f"{DB}.staging.liquidations_extracts",
+                    f"{DB}.staging.clip",
+                    pattern,
+                )
+                _clear_stage(sf, f"{DB}.staging.liquidations_extracts", pattern)
 
         print(f'{len(clipper_calls)} rows loaded')
 

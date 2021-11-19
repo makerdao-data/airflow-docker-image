@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 import sys
 
 sys.path.append('/opt/airflow/')
@@ -18,6 +18,11 @@ def _pre_load_check(blocks=None, vat=None, manager=None, **setup):
         SELECT count(distinct block), min(block), max(timestamp)
         FROM {setup['db']}.staging.blocks; """
     ).fetchone()
+
+    if not b_count:
+        b_count = 8928151
+        b_min = 8928151
+        b_timestamp = datetime(2019, 11, 13)
 
     b_max = 0
     for b in blocks:

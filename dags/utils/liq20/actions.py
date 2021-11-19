@@ -17,7 +17,7 @@ from airflow.exceptions import AirflowFailException
 import os, sys
 
 sys.path.append('/opt/airflow/')
-from dags.connectors.sf import sf, custom_write_to_stage, write_actions_to_table
+from dags.connectors.sf import sf, _write_actions_to_table, _write_to_stage, _clear_stage
 from dags.utils.mcd_units import wad, ray, rad
 from dags.utils.logs_decoder import decode_logs
 from dags.connectors.gcp import bq_query
@@ -89,24 +89,24 @@ def get_clipper_actions(load_id, start_block, end_block, start_time, end_time, D
     if start_block:
         d = sf.execute(
             f"""select *
-                        from {DB}.staging.clip
-                        where block >= {start_block}
-                            and function in ('kick', 'take', 'redo')
-                        order by block, tx_index"""
+                from {DB}.staging.clip
+                where block >= {start_block}
+                    and function in ('kick', 'take', 'redo')
+                order by block, tx_index"""
         ).fetchall()
     else:
         d = sf.execute(
             f"""select *
-                        from {DB}.staging.clip
-                        where function in ('kick', 'take', 'redo')
-                        order by block, tx_index"""
+                from {DB}.staging.clip
+                where function in ('kick', 'take', 'redo')
+                order by block, tx_index"""
         ).fetchall()
 
     # CREATE A DICT CONTAINING INITIAL PRICES FOR ALL AUCTIONS
     all_init_prices = sf.execute(
         f"""select ilk, auction_id, timestamp, init_price
-                                    from {DB}.internal.liq_action
-                                    where type = 'kick' and status = 1; """
+            from {DB}.internal.action
+            where type = 'kick' and status = 1; """
     ).fetchall()
 
     init_prices_dict = dict()
@@ -139,12 +139,25 @@ def get_clipper_actions(load_id, start_block, end_block, start_time, end_time, D
             urn = None
             ilk = get_ilk(DB, i[9])
 
+            """
+            PREVIOUS SF FOR TEST PURPOSES
+            """
+            import snowflake.connector
+            TEST_SNOWFLAKE_CONNECTION = dict(
+                account='sxa92001.us-east-1',
+                user='PIOTR',
+                password='ZbcnjE6BUGrzKRMK',
+                warehouse='COMPUTE_WH',
+                role='SYSADMIN')
+            test_connection = snowflake.connector.connect(**TEST_SNOWFLAKE_CONNECTION)
+            test_sf = test_connection.cursor()
+
             print(f'ILK: {ilk}')
-            osm_price, mkt_price = sf.execute(
+            osm_price, mkt_price = test_sf.execute(
                 f"""select osm_price, mkt_price
-                                    from mcd.internal.prices
-                                    where block = {i[1]}
-                                    and token = '{ilk.split('-')[0]}'; """
+                    from mcd.internal.prices
+                    where block = {i[1]}
+                    and token = '{ilk.split('-')[0]}'; """
             ).fetchone()
 
             try:
@@ -300,7 +313,6 @@ def get_clipper_actions(load_id, start_block, end_block, start_time, end_time, D
                         max_price,
                         collateral_price,
                         osm_price,
-                        mkt_price,
                         recovered_debt,
                         closing_take,
                         keeper,
@@ -312,6 +324,7 @@ def get_clipper_actions(load_id, start_block, end_block, start_time, end_time, D
                         None,
                         i[3],
                         ilk,
+                        mkt_price
                     ]
                 )
             except Exception as e:
@@ -320,8 +333,18 @@ def get_clipper_actions(load_id, start_block, end_block, start_time, end_time, D
                 raise AirflowFailException("#ERROR ON PREPARING DATA TO LOAD")
 
     if len(actions) > 0:
-        if custom_write_to_stage(actions, f"{DB}.staging.{STAGING}"):
-            write_actions_to_table(f"{DB}.staging.{STAGING}", f"{DB}.internal.liq_action")
+        # if custom_write_to_stage(actions, f"{DB}.staging.liquidations_extracts"):
+        #     write_actions_to_table(f"{DB}.staging.liquidations_extracts", f"{DB}.internal.action")
+
+        pattern = _write_to_stage(sf, actions, f"{DB}.staging.liquidations_extracts")
+        if pattern:
+            _write_actions_to_table(
+                sf,
+                f"{DB}.staging.liquidations_extracts",
+                f"{DB}.internal.action",
+                pattern,
+            )
+            _clear_stage(sf, f"{DB}.staging.liquidations_extracts", pattern)
 
     print('{} rows loaded.'.format(len(actions)))
 

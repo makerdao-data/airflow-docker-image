@@ -22,7 +22,7 @@ DB_SCHEMA_TABLE = 'tokens.staging.dai_balances'
 # You can override them on a per-task basis during operator initialization
 default_args = {
     'owner': 'airflow',
-    'email': ['piotr@makerdao.com', 'tomasz@makerdao.com'],
+    'email': ['piotr.m.klis@gmail.com'],
     'email_on_failure': True,
     'retries': 1,
     'retry_delay': timedelta(minutes=1),

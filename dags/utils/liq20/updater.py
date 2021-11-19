@@ -19,7 +19,7 @@ from dags.connectors.sf import sf, sf_dict
 
 def update_round_num(sf, id, ilk, round_num, DB):
 
-    q = f"""UPDATE {DB}.internal.liq_action
+    q = f"""UPDATE {DB}.internal.action
             SET round = {round_num}
             WHERE id = {id}
                 AND ilk = '{ilk}'; """
@@ -33,7 +33,7 @@ def rounds_auctions(load_id, start_block, end_block, start_time, end_time, DB, S
 
     initial = sf.execute(
         f"""select id, block
-                            from {DB}.internal.liq_action
+                            from {DB}.internal.action
                             where
                                 round is null
                                 and status = 1
@@ -45,7 +45,7 @@ def rounds_auctions(load_id, start_block, end_block, start_time, end_time, DB, S
 
         actions = sf_dict.execute(
             f"""select *
-                                    from {DB}.internal.liq_action
+                                    from {DB}.internal.action
                                     where
                                         type in ('kick', 'redo', 'take')
                                         and status = 1

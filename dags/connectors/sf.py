@@ -71,28 +71,6 @@ def write_to_table(stage, table, purge=True):
     return success
 
 
-def write_actions_to_table(stage, table, purge=True):
-
-    success = False
-    try:
-        sf.execute(
-            "COPY INTO %s(LOAD_ID, AUCTION_ID, TIMESTAMP, BLOCK, TX_HASH, \
-                                TYPE, CALLER, DATA, DEBT, INIT_PRICE, MAX_COLLATERAL_AMT, \
-                                AVAILABLE_COLLATERAL, SOLD_COLLATERAL, MAX_PRICE, \
-                                COLLATERAL_PRICE, OSM_PRICE, MKT_PRICE, RECOVERED_DEBT, CLOSING_TAKE, \
-                                KEEPER, INCENTIVES, URN, GAS_USED, STATUS, REVERT_REASON, \
-                                ROUND, BREADCRUMB, ILK) FROM @%s FILE_FORMAT=(TYPE=CSV,FIELD_DELIMITER = '|',NULL_IF='None') PURGE=%s; "
-            % (table, stage, purge)
-        )
-        success = True
-    except snowflake.connector.errors.ProgrammingError as e:
-        print(e)
-        print('Error {0} ({1}): {2} ({3})'.format(e.errno, e.sqlstate, e.msg, e.sfqid))
-        raise AirflowFailException("#ERROR ON LOADING DATA")
-
-    return success
-
-
 def sf_disconnect(cursor):
     cursor.connection.close()
 
@@ -157,16 +135,15 @@ def updated_write_to_table(stage, table, purge=True):
     return success
 
 
-def write_barks_to_table(stage, table, purge=True):
+def _write_barks_to_table(conn, stage, table, pattern, purge=True):
 
     success = False
     try:
-        sf.execute(
-            "COPY INTO %s(LOAD_ID, BLOCK, TIMESTAMP, TX_HASH, URN, VAULT, \
-                    ILK, OWNER, COLLATERAL, DEBT, PENALTY, RATIO, OSM_PRICE, MKT_PRICE, \
-                    AUCTION_ID, CALLER, KEEPER, GAS_USED, STATUS, REVERT_REASON \
-                    ) FROM @%s FILE_FORMAT=(TYPE=CSV,FIELD_DELIMITER = '|',NULL_IF='None') PURGE=%s; "
-            % (table, stage, purge)
+        conn.execute(
+            f"""COPY INTO {table}(LOAD_ID, BLOCK, TIMESTAMP, TX_HASH, URN, VAULT,
+                    ILK, OWNER, COLLATERAL, DEBT, PENALTY, RATIO, OSM_PRICE, MKT_PRICE,
+                    AUCTION_ID, CALLER, KEEPER, GAS_USED, STATUS, REVERT_REASON
+                    ) FROM @{stage}/{pattern} FILE_FORMAT=(TYPE=CSV,FIELD_DELIMITER = '|',NULL_IF='None') PURGE={purge}; """
         )
         success = True
 
@@ -242,3 +219,26 @@ def _write_to_table(conn, stage, table, pattern, purge=True):
     )
 
     return True
+
+
+def _write_actions_to_table(conn, stage, table, pattern, purge=True):
+
+    success = False
+    try:
+        conn.execute(
+            f"""COPY INTO {table}(
+                LOAD_ID, AUCTION_ID, TIMESTAMP, BLOCK, TX_HASH,
+                TYPE, CALLER, DATA, DEBT, INIT_PRICE, MAX_COLLATERAL_AMT,
+                AVAILABLE_COLLATERAL, SOLD_COLLATERAL, MAX_PRICE,
+                COLLATERAL_PRICE, OSM_PRICE, RECOVERED_DEBT, CLOSING_TAKE,
+                KEEPER, INCENTIVES, URN, GAS_USED, STATUS, REVERT_REASON,
+                ROUND, BREADCRUMB, ILK, MKT_PRICE
+                ) FROM @{stage}/{pattern}.gz FILE_FORMAT=(TYPE=CSV,FIELD_DELIMITER = '|',NULL_IF='None') PURGE={purge}; """
+        )
+        success = True
+    except snowflake.connector.errors.ProgrammingError as e:
+        print(e)
+        print('Error {0} ({1}): {2} ({3})'.format(e.errno, e.sqlstate, e.msg, e.sfqid))
+        raise AirflowFailException("#ERROR ON LOADING DATA")
+
+    return success

@@ -32,7 +32,7 @@ DB = liquidations_db
 # You can override them on a per-task basis during operator initialization
 default_args = {
     'owner': 'airflow',
-    'email': ["piotr.m.klis@gmail.com", "karol@tokenflow.live"],
+    'email': ['piotr.m.klis@gmail.com'],
     'email_on_failure': True,
     'retries': 0,
     'retry_delay': timedelta(minutes=1),
@@ -54,10 +54,8 @@ def mainnet_liquidations20():
         load_id = datetime.utcnow().__str__()[:19]
         proc_start = load_id
 
-        sf.execute(f"""REMOVE @{DB}.staging.{STAGING};""")
-
         q = f"""SELECT max(end_block), max(proc_start)
-                FROM {DB}.internal.keeper
+                FROM {DB}.internal.scheduler
                 WHERE status = 1; """
 
         last_parsed_block = sf.execute(q).fetchone()
@@ -68,7 +66,7 @@ def mainnet_liquidations20():
             start_block = 12316360
             start_time = '2021-04-26 14:02:08'
 
-        # prevent from running ahead of mcd.internal.prices data (needed for loading {DB}.internal.liq_action)
+        # prevent from running ahead of mcd.internal.prices data (needed for loading {DB}.internal.action)
         end_block, end_time = sf.execute(
             """
                 SELECT MAX(block), MAX(timestamp)
@@ -77,7 +75,11 @@ def mainnet_liquidations20():
 
         end_time = end_time.__str__()[:19]
 
-        q = f"""INSERT INTO {DB}.internal.keeper(load_id, proc_start, start_block, end_block)
+        end_block = 12344944
+        end_time = '2021-04-30 23:59:59'
+
+
+        q = f"""INSERT INTO {DB}.internal.scheduler(load_id, proc_start, start_block, end_block)
                 VALUES('{load_id}', '{proc_start}', {start_block}, {end_block}); """
 
         sf.execute(q)
@@ -177,7 +179,7 @@ def mainnet_liquidations20():
         end_point = datetime.utcnow()
         proc_end = end_point.__str__()[:19]
 
-        q = f"""UPDATE {DB}.internal.keeper
+        q = f"""UPDATE {DB}.internal.scheduler
                 SET proc_end = '{proc_end}', status = {status}, dog_calls = {dog_calls}, clipper_calls = {clipper_calls}
                 WHERE load_id = '{load_id}'; """
 

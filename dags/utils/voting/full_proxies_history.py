@@ -17,7 +17,7 @@ def _full_proxies_history(up, down, **setup):
             to_varchar(timestamp, 'YYYY-MM-DD HH:MI:SS') timestamp, tx_hash,
             lower(cold), lower(hot), lower(proxy), action, breadcrumb,
             from_address, to_address, gas_used, gas_price
-        from {setup['votes_db']}.internal.stg_proxies
+        from {setup['votes_db']}.internal.vote_proxies
         order by timestamp;
     """
     ).fetchall()
@@ -34,7 +34,7 @@ def _full_proxies_history(up, down, **setup):
             transaction_write_to_table(
                 sf,
                 f"{setup['votes_db']}.staging.votes_extracts",
-                f"{setup['votes_db']}.internal.stg_proxies",
+                f"{setup['votes_db']}.internal.vote_proxies",
                 pattern,
             )
             transaction_clear_stage(sf, f"{setup['votes_db']}.staging.votes_extracts", pattern)

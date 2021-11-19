@@ -21,7 +21,7 @@ def _votes(operations, new_polls, **setup):
                 o.slate, o.yay1, o.yay2, o.yay3, o.yay4,
                 o.yay5, o.function, o.option, o.proxy, o.cold,
                 o.gas_used, o.gas_price
-            FROM {setup['votes_db']}.internal.gov_operations o
+            FROM {setup['votes_db']}.operations.vote o
             ORDER BY order_index; 
         """
 
@@ -78,13 +78,6 @@ def _votes(operations, new_polls, **setup):
         for i in new_polls:
             if i[1] not in all_polls:
                 all_polls.setdefault(i[1], i[3])
-
-        query = f"""SELECT p.address, p.attributes
-                FROM {setup['votes_db']}.internal.proxies p
-                WHERE p.type = 'MCDVoteProxy'; """
-
-        proxies = sf.execute(query)
-        proxies = {p[0]: json.loads(p[1]) for p in proxies}
 
         start_block, start_time = sf.execute(
             f"""

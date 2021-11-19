@@ -15,7 +15,7 @@ import os, sys
 
 sys.path.append('/opt/airflow/')
 from dags.utils.bq_adapters import decode_calls
-from dags.connectors.sf import sf, custom_write_to_stage, write_to_table
+from dags.connectors.sf import sf, _write_to_stage, _write_to_table, _clear_stage
 
 
 def get_dog_calls(load_id, start_block, end_block, start_time, end_time, DB, STAGING):
@@ -43,8 +43,16 @@ def get_dog_calls(load_id, start_block, end_block, start_time, end_time, DB, STA
         )
 
         if len(dog_calls) > 0:
-            if custom_write_to_stage(dog_calls, f"{DB}.staging.{STAGING}"):
-                write_to_table(f"{DB}.staging.{STAGING}", f"{DB}.staging.dog")
+            
+            pattern = _write_to_stage(sf, dog_calls, f"{DB}.staging.liquidations_extracts")
+            if pattern:
+                _write_to_table(
+                    sf,
+                    f"{DB}.staging.liquidations_extracts",
+                    f"{DB}.staging.dog",
+                    pattern,
+                )
+                _clear_stage(sf, f"{DB}.staging.liquidations_extracts", pattern)
 
         print(f'{len(dog_calls)} rows loaded')
 

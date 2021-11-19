@@ -44,7 +44,7 @@ def _voting_power_cache(**setup):
     all_proxy_history = sf.execute(
         f"""
             select load_id, block, tx_index, timestamp, tx_hash, lower(cold), lower(hot), lower(proxy), action
-            from {setup['votes_db']}.internal.stg_proxies
+            from {setup['votes_db']}.internal.vote_proxies
             where timestamp <= '{setup['load_id']}'
             order by timestamp;
         """

@@ -12,8 +12,7 @@
 
 from web3 import Web3
 import json
-from connectors.sf import sf, custom_write_to_stage, write_to_table
-from dags.connectors.sf import sf, sf_dict, custom_write_to_stage, write_barks_to_table
+from dags.connectors.sf import sf, sf_dict, _write_to_stage, _write_barks_to_table, _clear_stage
 from dags.connectors.chain import chain
 from dags.utils.bc_adapters import get_liquidation_penalty
 from dags.utils.mcd_units import wad, rad, ray
@@ -164,8 +163,15 @@ def get_barks(load_id, start_block, end_block, start_time, end_time, DB, STAGING
         )
 
     if len(brk) > 0:
-        if custom_write_to_stage(brk, f"{DB}.staging.{STAGING}"):
-            write_barks_to_table(f"{DB}.staging.{STAGING}", f"{DB}.internal.bark")
+        pattern = _write_to_stage(sf, brk, f"{DB}.staging.liquidations_extracts")
+        if pattern:
+            _write_barks_to_table(
+                sf,
+                f"{DB}.staging.liquidations_extracts",
+                f"{DB}.internal.bark",
+                pattern,
+            )
+            _clear_stage(sf, f"{DB}.staging.liquidations_extracts", pattern)
 
     print('{} rows loaded'.format(len(brk)))
 
