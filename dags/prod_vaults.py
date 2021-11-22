@@ -46,8 +46,8 @@ dataset = "bigquery-public-data.crypto_ethereum"
 # [START instantiate_dag]
 @dag(
     default_args=default_args,
-    schedule_interval=None,
-    start_date=datetime(2021, 10, 11, 10),
+    schedule_interval='*/10 * * * *',
+    start_date=datetime(2021, 11, 22, 12),
     max_active_runs=1,
     catchup=False,
 )
