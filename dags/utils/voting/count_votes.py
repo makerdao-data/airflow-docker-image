@@ -86,11 +86,11 @@ def _count_votes(**setup):
         all_proxy_history = sf.execute(
             f"""
             select load_id, block, tx_index, timestamp, tx_hash, lower(cold), lower(hot), lower(proxy), action
-            from {setup['votes_db']}.internal.stg_proxies
+            from {setup['votes_db']}.internal.vote_proxies
             where timestamp <= '{end_timestamp}'
             order by timestamp;
         """
-        )
+        ).fetchall()
 
         proxies = dict()
         for load_id, block, tx_index, timestamp, tx_hash, cold, hot, proxy, action in all_proxy_history:
