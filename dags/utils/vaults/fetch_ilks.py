@@ -140,13 +140,21 @@ def _fetch_ilks(vat, **setup):
                 pass
 
         elif ilk == 'SAI':
-
-            sf.execute(
+            
+            if not sf.execute(
                 f"""
-                INSERT INTO {setup['db']}.internal.ilks(ilk, block, timestamp, cp_id, pip_oracle_name, pip_oracle_address, type, abi_hash)
-                VALUES ('{ilk}', {block}, '{timestamp.__str__()[:19]}', 'sai-single-collateral-dai', NULL, NULL, NULL, NULL);
+                SELECT ilk
+                FROM mcd.internal.ilks
+                where ilk = 'SAI';
             """
-            )
+            ).fetchone()[0]:
+
+                sf.execute(
+                    f"""
+                    INSERT INTO {setup['db']}.internal.ilks(ilk, block, timestamp, cp_id, pip_oracle_name, pip_oracle_address, type, abi_hash)
+                    VALUES ('{ilk}', {block}, '{timestamp.__str__()[:19]}', 'sai-single-collateral-dai', NULL, NULL, NULL, NULL);
+                """
+                )
 
         else:
 

@@ -139,21 +139,7 @@ def get_clipper_actions(load_id, start_block, end_block, start_time, end_time, D
             urn = None
             ilk = get_ilk(DB, i[9])
 
-            """
-            PREVIOUS SF FOR TEST PURPOSES
-            """
-            import snowflake.connector
-            TEST_SNOWFLAKE_CONNECTION = dict(
-                account='sxa92001.us-east-1',
-                user='PIOTR',
-                password='ZbcnjE6BUGrzKRMK',
-                warehouse='COMPUTE_WH',
-                role='SYSADMIN')
-            test_connection = snowflake.connector.connect(**TEST_SNOWFLAKE_CONNECTION)
-            test_sf = test_connection.cursor()
-
-            print(f'ILK: {ilk}')
-            osm_price, mkt_price = test_sf.execute(
+            osm_price, mkt_price = sf.execute(
                 f"""select osm_price, mkt_price
                     from mcd.internal.prices
                     where block = {i[1]}
