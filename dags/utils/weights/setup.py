@@ -11,7 +11,7 @@ def _setup():
 
     last_date = sf.execute(f"""
         SELECT MAX(eod)
-        FROM data_insights_cu.public.power;
+        FROM delegates.public.power;
     """
     ).fetchone()[0]
 

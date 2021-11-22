@@ -29,8 +29,8 @@ default_args = {
 # [START instantiate_dag]
 @dag(
     default_args=default_args,
-    schedule_interval=None,
-    start_date=datetime(2021, 11, 12, 12),
+    schedule_interval='0 3 * * *',
+    start_date=datetime(2021, 11, 22, 12),
     max_active_runs=1,
     catchup=False,
 )
@@ -54,7 +54,7 @@ def prod_weights_load():
 
             delegates = sf.execute("""
                 SELECT timestamp, vote_delegate
-                FROM data_insights_cu.public.delegates;
+                FROM delegates.public.delegates;
             """
             ).fetchall()
 
@@ -78,21 +78,21 @@ def prod_weights_load():
             
             if records:
                 pattern = _write_to_stage(
-                    sf, records, "data_insights_cu.public.extracts"
+                    sf, records, "delegates.public.extracts"
                 )
                 if pattern:
                     _write_to_table(
                         sf,
-                        "data_insights_cu.public.extracts",
-                        "data_insights_cu.public.power",
+                        "delegates.public.extracts",
+                        "delegates.public.power",
                         pattern,
                     )
-                    _clear_stage(sf, "data_insights_cu.public.extracts", pattern)
+                    _clear_stage(sf, "delegates.public.extracts", pattern)
                 
                 _gsheet_push()
 
             sf.execute(f"""
-                INSERT INTO data_insights_cu.public.scheduler(load_id, start_date, end_date)
+                INSERT INTO delegates.public.scheduler(load_id, start_date, end_date)
                 VALUES('{load_id}', '{days[0].__str__()[:10]}', '{days[-1].__str__()[:10]}');
             """
             )

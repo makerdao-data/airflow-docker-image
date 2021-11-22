@@ -10,7 +10,7 @@ def _fetch_vote_delegates(start_date, end_date, load_id):
     vote_delegates = list()
     for vote_delegate in sf.execute("""
         SELECT vote_delegate
-        FROM data_insights_cu.public.delegates;
+        FROM delegates.public.delegates;
     """
     ).fetchall():
 
@@ -49,15 +49,15 @@ def _fetch_vote_delegates(start_date, end_date, load_id):
 
     if records:
         pattern = _write_to_stage(
-            sf, records, "data_insights_cu.public.extracts"
+            sf, records, "delegates.public.extracts"
         )
         if pattern:
             _write_to_table(
                 sf,
-                "data_insights_cu.public.extracts",
-                "data_insights_cu.public.delegates",
+                "delegates.public.extracts",
+                "delegates.public.delegates",
                 pattern,
             )
-            _clear_stage(sf, "data_insights_cu.public.extracts", pattern)
+            _clear_stage(sf, "delegates.public.extracts", pattern)
 
         _update_delegates()

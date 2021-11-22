@@ -27,7 +27,7 @@ def _gsheet_push():
 
     records = sf.execute(f"""
         select to_varchar(p.eod::date) as eod, d.type as type, case when d.name is null then d.vote_delegate else d.name end as name, p.balance as weight
-        from data_insights_cu.public.power p, data_insights_cu.public.delegates d
+        from delegates.public.power p, delegates.public.delegates d
         where p.vote_delegate = d.vote_delegate and
             eod > '{response['values'][-1][0]}'
         order by eod;
