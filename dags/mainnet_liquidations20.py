@@ -75,10 +75,6 @@ def mainnet_liquidations20():
 
         end_time = end_time.__str__()[:19]
 
-        end_block = 12344944
-        end_time = '2021-04-30 23:59:59'
-
-
         q = f"""INSERT INTO {DB}.internal.scheduler(load_id, proc_start, start_block, end_block)
                 VALUES('{load_id}', '{proc_start}', {start_block}, {end_block}); """
 
