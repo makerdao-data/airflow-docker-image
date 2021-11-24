@@ -22,6 +22,7 @@ from dags.utils.liq20.dog import get_dog_calls
 from dags.utils.liq20.barks import get_barks
 from dags.utils.liq20.clippers import update_clippers
 from dags.connectors.sf import sf
+from dags.connectors.chain import chain
 from dags.connectors.gcp import bq_query
 from config import liquidations_db, STAGING
 
@@ -61,7 +62,8 @@ def mainnet_liquidations20():
         last_parsed_block = sf.execute(q).fetchone()
         if last_parsed_block[0] and last_parsed_block[1]:
             start_block = last_parsed_block[0] + 1
-            start_time = datetime.strftime(last_parsed_block[1], '%Y-%m-%d %H:%M:%S')
+            block_timestamp = chain.eth.get_block(start_block)['timestamp']
+            start_time = datetime.utcfromtimestamp(block_timestamp).__str__()[:19]
         else:
             start_block = 12316360
             start_time = '2021-04-26 14:02:08'

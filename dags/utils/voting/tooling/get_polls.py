@@ -11,7 +11,7 @@ def _get_polls_data(max_poll, end_time, base_link='https://governance-portal-v2.
         titles = None
     else:
         titles = list()
-        for poll in response.json():
+        for poll in response.json()['polls']:
 
             if int(poll['pollId']) > max_poll:
                 if datetime.strptime(poll['startDate'], '%Y-%m-%dT%H:%M:%S.000Z') <= datetime.strptime(
