@@ -1,3 +1,6 @@
+import os, sys
+sys.path.append('/opt/airflow/')
+from dags.connectors.sf import _write_to_stage, sf
 from dags.utils.bq_adapters import extract_spot_calls
 
 
@@ -16,5 +19,9 @@ def _fetch_ratios(**setup):
         records.append([setup['load_id'], call.block_number, call.block_timestamp.__str__()[:19], ilk, mat])
 
     print(f"""MAT updates: {len(calls)} read, {len(records)} prepare to write""")
+    
+    pattern = None
+    if records:
+        pattern = _write_to_stage(sf, records, f"{setup['db']}.staging.vaults_extracts")
 
-    return records
+    return pattern

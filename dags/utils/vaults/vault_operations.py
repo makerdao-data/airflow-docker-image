@@ -1,7 +1,10 @@
+import os, sys
+sys.path.append('/opt/airflow/')
+from dags.connectors.sf import _write_to_stage, sf
 from operator import itemgetter
 
 
-def _vault_operations(vat_operations, manager_operations, opened_vaults):
+def _vault_operations(vat_operations, manager_operations, opened_vaults, **setup):
     records = list()
 
     for order_index, block, timestamp, tx_hash, urn, ilk, dink, sink, dart, sart, function in vat_operations:
@@ -114,4 +117,8 @@ def _vault_operations(vat_operations, manager_operations, opened_vaults):
 
     ordered_records = sorted(records, key=itemgetter(0))
 
-    return ordered_records
+    pattern = None
+    if records:
+        pattern = _write_to_stage(sf, ordered_records, f"{setup['db']}.staging.vaults_extracts")
+
+    return pattern

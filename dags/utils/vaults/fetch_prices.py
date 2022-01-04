@@ -1,8 +1,10 @@
+import os, sys
+sys.path.append('/opt/airflow/')
 from decimal import Decimal
 from datetime import datetime, timedelta
-from dags.connectors.sf import sf
 from dags.utils.bq_adapters import extract_pip_events
 from dags.connectors.coingecko import get_gecko_price
+from dags.connectors.sf import _write_to_stage, sf
 
 
 def _fetch_prices(new_blocks, oracles, external_prices, **setup):
@@ -79,7 +81,7 @@ def _fetch_prices(new_blocks, oracles, external_prices, **setup):
                             int(datetime.timestamp(temp_block_timestamp)), token, external_prices
                         )
                     except Exception as e:
-                        print(e)
+                        # print(e)
                         market_price = None
 
                 if not market_price:
@@ -97,4 +99,8 @@ def _fetch_prices(new_blocks, oracles, external_prices, **setup):
 
     print(f"""Prices: {len(operations)} read, {len(records)} written""")
 
-    return records
+    pattern = None
+    if records:
+        pattern = _write_to_stage(sf, records, f"{setup['db']}.staging.vaults_extracts")
+
+    return pattern

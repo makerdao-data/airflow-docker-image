@@ -1,5 +1,8 @@
+import os, sys
+sys.path.append('/opt/airflow/')
 from dags.utils.bq_adapters import extract_calls
 from dags.utils.bc_adapters import read_urn
+from dags.connectors.sf import _write_to_stage, sf
 
 
 def _fetch_manager(**setup):
@@ -26,7 +29,7 @@ def _fetch_manager(**setup):
                 call.tx_hash,
                 call.tx_index,
                 call.type,
-                str(call.value),
+                call.value,
                 call.from_address,
                 call.to_address,
                 call.function,
@@ -40,5 +43,9 @@ def _fetch_manager(**setup):
             records.append(record)
 
     print(f"""CDP calls: {len(calls)} read, {len(records)} prepared to write""")
+    
+    pattern = None
+    if records:
+        pattern = _write_to_stage(sf, records, f"{setup['db']}.staging.vaults_extracts")
 
-    return records
+    return pattern

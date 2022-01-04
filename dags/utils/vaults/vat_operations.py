@@ -1,7 +1,9 @@
-import json
+import os, sys
+sys.path.append('/opt/airflow/')
+from dags.connectors.sf import _write_to_stage, sf
 
 
-def _vat_operations(vat):
+def _vat_operations(vat, **setup):
 
     records = list()
     for (
@@ -80,5 +82,9 @@ def _vat_operations(vat):
             else:
 
                 pass
+    
+    pattern = None
+    if records:
+        pattern = _write_to_stage(sf, records, f"{setup['db']}.staging.vaults_extracts")
 
-    return records
+    return pattern

@@ -1,4 +1,6 @@
-from dags.connectors.sf import sf
+import os, sys
+sys.path.append('/opt/airflow/')
+from dags.connectors.sf import _write_to_stage, sf
 
 
 def _fetch_rates(new_blocks, new_vat, **setup):
@@ -44,5 +46,9 @@ def _fetch_rates(new_blocks, new_vat, **setup):
             records.append((setup['load_id'], block, timestamp, ilk, rates[ilk]))
 
     print(f"""Rates: {len(operations)} read, {len(records)} prepare to write""")
+    
+    pattern = None
+    if records:
+        pattern = _write_to_stage(sf, records, f"{setup['db']}.staging.vaults_extracts")
 
-    return records
+    return pattern

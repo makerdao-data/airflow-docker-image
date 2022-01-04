@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 from airflow.decorators import dag, task
 import os, sys
-
 sys.path.append('/opt/airflow/')
 from dags.utils.vaults.setup import _setup
 from dags.utils.vaults.cohesion_check import _cohesion_check
@@ -75,9 +74,9 @@ def prod_vaults_load():
         return {"vat": vat}
 
     @task(multiple_outputs=True)
-    def vat_operations(task_dependency, vat):
+    def vat_operations(task_dependency, vat, setup):
 
-        vat_operations = _vat_operations(vat)
+        vat_operations = _vat_operations(vat, **setup)
 
         return {"vat_operations": vat_operations}
 
@@ -89,9 +88,9 @@ def prod_vaults_load():
         return {"manager": manager}
 
     @task(multiple_outputs=True)
-    def manager_operations(task_dependency, manager):
+    def manager_operations(task_dependency, manager, setup):
 
-        manager_operations = _manager_operations(manager)
+        manager_operations = _manager_operations(manager, **setup)
 
         return {"manager_operations": manager_operations}
 
@@ -103,9 +102,9 @@ def prod_vaults_load():
         return {"opened_vaults": opened_vaults}
 
     @task(multiple_outputs=True)
-    def vault_operations(task_dependency, vat_operations, manager_operations, opened_vaults):
+    def vault_operations(task_dependency, vat_operations, manager_operations, opened_vaults, setup):
 
-        vault_operations = _vault_operations(vat_operations, manager_operations, opened_vaults)
+        vault_operations = _vault_operations(vat_operations, manager_operations, opened_vaults, **setup)
 
         return {"vault_operations": vault_operations}
 
@@ -134,9 +133,6 @@ def prod_vaults_load():
     def fetch_rates(task_dependency, blocks, vat, setup):
 
         rates = _fetch_rates(blocks, vat, **setup)
-
-        for r in rates:
-            print(r)
 
         return {'rates': rates}
 
@@ -209,15 +205,16 @@ def prod_vaults_load():
     setup = setup()
     blocks = fetch_blocks(setup, setup)
     vat = fetch_vat(setup, setup)
-    vat_ops = vat_operations(vat, vat['vat'])
+    vat_ops = vat_operations(vat, vat['vat'], setup)
     manager = fetch_manager(setup, setup)
-    manager_ops = manager_operations(manager, manager['manager'])
+    manager_ops = manager_operations(manager, manager['manager'], setup)
     all_vaults = opened_vaults(manager, manager['manager'], setup)
     vault_ops = vault_operations(
         [vat_ops, manager_ops, all_vaults],
         vat_ops['vat_operations'],
         manager_ops['manager_operations'],
         all_vaults['opened_vaults'],
+        setup,
     )
     ilks = fetch_ilks(vat, vat['vat'], setup)
     oracles = fetch_oracles(ilks, setup)

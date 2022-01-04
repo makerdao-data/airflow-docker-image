@@ -1,4 +1,6 @@
-from dags.connectors.sf import sf
+import os, sys
+sys.path.append('/opt/airflow/')
+from dags.connectors.sf import _write_to_stage, sf
 
 
 def _vaults(mats, vault_operations, rates, prices, **setup):
@@ -112,4 +114,8 @@ def _vaults(mats, vault_operations, rates, prices, **setup):
 
     print(f"""Vaults related records to be loaded to public.vaults: {len(vaults_table_records)}""")
 
-    return vaults_table_records
+    pattern = None
+    if vaults_table_records:
+        pattern = _write_to_stage(sf, vaults_table_records, f"{setup['db']}.staging.vaults_extracts")
+
+    return pattern

@@ -1,6 +1,9 @@
+import os, sys
+sys.path.append('/opt/airflow/')
 import json
 import requests
 from datetime import datetime, timezone
+from dags.connectors.sf import _write_to_stage, sf
 
 
 def timestamp_converter(d: str) -> int:
@@ -52,5 +55,9 @@ def _fetch_external_prices(**setup):
             external_prices[coin] = resp['prices']
         else:
             external_prices[coin] = None
+        
+    pattern = None
+    if external_prices:
+        pattern = _write_to_stage(sf, external_prices, f"{setup['db']}.staging.vaults_extracts")
 
-    return external_prices
+    return pattern

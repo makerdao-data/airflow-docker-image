@@ -1,5 +1,8 @@
-from datetime import datetime
+import sys
+sys.path.append('/opt/airflow/')
 from dags.utils.bq_adapters import extract_bq_blocks
+from dags.connectors.sf import _write_to_stage, sf
+from decimal import Decimal
 
 
 def _fetch_blocks(**setup):
@@ -14,7 +17,7 @@ def _fetch_blocks(**setup):
             block.timestamp.__str__()[:19],
             block.block_hash,
             block.miner,
-            str(block.difficulty),
+            block.difficulty,
             block.size,
             block.extra_data,
             block.gas_limit,
@@ -25,5 +28,9 @@ def _fetch_blocks(**setup):
     ]
 
     print(f"""Blocks: {len(blocks)} read, {len(records)} prepared to write""")
+    
+    pattern = None
+    if records:
+        pattern = _write_to_stage(sf, records, f"{setup['db']}.staging.vaults_extracts")
 
-    return records
+    return pattern

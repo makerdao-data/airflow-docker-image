@@ -11,180 +11,173 @@ from dags.connectors.sf import _write_to_stage, _write_to_table, _clear_stage
 
 def _load(blocks, vat, vat_operations, manager, manager_operations, ratios, rates, prices, vaults_operations, public_vaults, **setup):
 
-    ### START TRANSACTION
-
-    print('#INFO: STARTING TRANSACTION')
-
     connection = snowflake.connector.connect(**SNOWFLAKE_CONNECTION)
     sf_transaction = connection.cursor()
 
     try:
-        print('BEGIN TRANSACTION')
         sf_transaction.execute("BEGIN TRANSACTION; ")
 
-        print('NEW BLOCKS')
-        records = []
-        for i in blocks:
-            temp = i
-            temp[5] = Decimal(i[5])
-            records.append(temp)
 
-        pattern = _write_to_stage(sf_transaction, records, f"{setup['db']}.staging.vaults_extracts")
-        if pattern:
+        # records = []
+        # for i in blocks:
+        #     temp = i
+        #     temp[5] = Decimal(i[5])
+        #     records.append(temp)
+
+        # pattern = _write_to_stage(sf_transaction, records, f"{setup['db']}.staging.vaults_extracts")
+        if blocks:
             _write_to_table(
                 sf_transaction,
                 f"{setup['db']}.staging.vaults_extracts",
                 f"{setup['db']}.staging.blocks",
-                pattern,
+                blocks,
             )
-            _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", pattern)
+            _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", blocks)
 
         del blocks
-        del records
+        # del records
 
-        print('VAT OPERATIONS')
-        records = []
-        for i in vat:
-            temp = i
-            temp[7] = Decimal(i[7])
-            records.append(temp)
 
-        pattern = _write_to_stage(sf_transaction, records, f"{setup['db']}.staging.vaults_extracts")
-        if pattern:
+        # records = []
+        # for i in vat:
+        #     temp = i
+        #     temp[7] = Decimal(i[7])
+        #     records.append(temp)
+
+        # pattern = _write_to_stage(sf_transaction, records, f"{setup['db']}.staging.vaults_extracts")
+        if vat:
             _write_to_table(
                 sf_transaction,
                 f"{setup['db']}.staging.vaults_extracts",
                 f"{setup['db']}.staging.vat",
-                pattern,
+                vat,
             )
-            _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", pattern)
+            _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", vat)
 
         del vat
-        del records
+        # del records
 
-        print('MCD OPERATIONS')
-        records = []
-        for i in manager:
-            temp = i
-            temp[7] = Decimal(i[7])
-            records.append(temp)
 
-        pattern = _write_to_stage(sf_transaction, records, f"{setup['db']}.staging.vaults_extracts")
-        if pattern:
+        # records = []
+        # for i in manager:
+        #     temp = i
+        #     temp[7] = Decimal(i[7])
+        #     records.append(temp)
+
+        # pattern = _write_to_stage(sf_transaction, records, f"{setup['db']}.staging.vaults_extracts")
+        if manager:
             _write_to_table(
                 sf_transaction,
                 f"{setup['db']}.staging.vaults_extracts",
                 f"{setup['db']}.staging.manager",
-                pattern,
+                manager,
             )
-            _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", pattern)
+            _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", manager)
 
         del manager
-        del records
+        # del records
 
-        print('MATS')
-        pattern = _write_to_stage(sf_transaction, ratios, f"{setup['db']}.staging.vaults_extracts")
-        if pattern:
+
+        # pattern = _write_to_stage(sf_transaction, ratios, f"{setup['db']}.staging.vaults_extracts")
+        if ratios:
             _write_to_table(
                 sf_transaction,
                 f"{setup['db']}.staging.vaults_extracts",
                 f"{setup['db']}.internal.mats",
-                pattern,
+                ratios,
             )
-            _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", pattern)
+            _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", ratios)
 
         del ratios
 
-        print('RATES')
-        pattern = _write_to_stage(sf_transaction, rates, f"{setup['db']}.staging.vaults_extracts")
-        if pattern:
+
+        # pattern = _write_to_stage(sf_transaction, rates, f"{setup['db']}.staging.vaults_extracts")
+        if rates:
             _write_to_table(
                 sf_transaction,
                 f"{setup['db']}.staging.vaults_extracts",
                 f"{setup['db']}.internal.rates",
-                pattern,
+                rates,
             )
-            _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", pattern)
+            _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", rates)
 
         del rates
 
-        print('MARKET AND OSM PRICES - UPDATED')
-        records = []
-        for i in prices:
-            temp = i
-            if type(i[4]) == str:
-                temp[4] = Decimal(i[4])
-            if type(i[5]) == str:
-                temp[5] = Decimal(i[5])
-            records.append(temp)
 
-        pattern = _write_to_stage(sf_transaction, records, f"{setup['db']}.staging.vaults_extracts")
-        if pattern:
+        # records = []
+        # for i in prices:
+        #     temp = i
+        #     if type(i[4]) == str:
+        #         temp[4] = Decimal(i[4])
+        #     if type(i[5]) == str:
+        #         temp[5] = Decimal(i[5])
+        #     records.append(temp)
+
+        # pattern = _write_to_stage(sf_transaction, records, f"{setup['db']}.staging.vaults_extracts")
+        if prices:
             _write_to_table(
                 sf_transaction,
                 f"{setup['db']}.staging.vaults_extracts",
                 f"{setup['db']}.internal.prices",
-                pattern,
+                prices,
             )
-            _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", pattern)
+            _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", prices)
 
         del prices
-        del records
+        # del records
 
-        print('VAULTS OPERATIONS')
-        pattern = _write_to_stage(sf_transaction, vaults_operations, f"{setup['db']}.staging.vaults_extracts")
-        if pattern:
+
+        # pattern = _write_to_stage(sf_transaction, vaults_operations, f"{setup['db']}.staging.vaults_extracts")
+        if vaults_operations:
             _write_to_table(
                 sf_transaction,
                 f"{setup['db']}.staging.vaults_extracts",
                 f"{setup['db']}.operations.vault",
-                pattern,
+                vaults_operations,
             )
-            _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", pattern)
+            _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", vaults_operations)
 
         del vaults_operations
 
-        print('VAT OPERATIONS')
-        pattern = _write_to_stage(sf_transaction, vat_operations, f"{setup['db']}.staging.vaults_extracts")
-        if pattern:
+
+        # pattern = _write_to_stage(sf_transaction, vat_operations, f"{setup['db']}.staging.vaults_extracts")
+        if vat_operations:
             _write_to_table(
                 sf_transaction,
                 f"{setup['db']}.staging.vaults_extracts",
                 f"{setup['db']}.operations.vat",
-                pattern,
+                vat_operations,
             )
-            _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", pattern)
+            _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", vat_operations)
 
         del vat_operations
 
-        print('MANAGER OPERATIONS')
-        pattern = _write_to_stage(sf_transaction, manager_operations, f"{setup['db']}.staging.vaults_extracts")
-        if pattern:
+
+        # pattern = _write_to_stage(sf_transaction, manager_operations, f"{setup['db']}.staging.vaults_extracts")
+        if manager_operations:
             _write_to_table(
                 sf_transaction,
                 f"{setup['db']}.staging.vaults_extracts",
                 f"{setup['db']}.operations.manager",
-                pattern,
+                manager_operations,
             )
-            _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", pattern)
+            _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", manager_operations)
 
         del manager_operations
 
-        print('PUBLIC VAULTS')
 
-        pattern = _write_to_stage(sf_transaction, public_vaults, f"{setup['db']}.staging.vaults_extracts")
-        if pattern:
+        # pattern = _write_to_stage(sf_transaction, public_vaults, f"{setup['db']}.staging.vaults_extracts")
+        if public_vaults:
             _write_to_table(
                 sf_transaction,
                 f"{setup['db']}.staging.vaults_extracts",
                 f"{setup['db']}.public.vaults",
-                pattern,
+                public_vaults,
             )
-            _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", pattern)
+            _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", public_vaults)
 
         del public_vaults
 
-        print('PROCESS DETAILS')
 
         proc_end = datetime.utcnow().__str__()[:19]
         sf_transaction.execute(

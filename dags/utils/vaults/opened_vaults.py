@@ -1,5 +1,6 @@
-import json
-from dags.connectors.sf import sf
+import os, sys
+sys.path.append('/opt/airflow/')
+from dags.connectors.sf import _write_to_stage, sf
 
 
 def _opened_vaults(manager, **setup):
@@ -38,4 +39,8 @@ def _opened_vaults(manager, **setup):
 
             opened_vaults[outputs[1]['value']] = outputs[0]['value']
 
-    return opened_vaults
+    pattern = None
+    if opened_vaults:
+        pattern = _write_to_stage(sf, opened_vaults, f"{setup['db']}.staging.vaults_extracts")
+
+    return pattern
