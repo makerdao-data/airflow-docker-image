@@ -16,6 +16,7 @@ from random import randint
 from airflow.exceptions import AirflowFailException
 from random import randint
 import os, sys
+import json
 
 sys.path.append('/opt/airflow/')
 from config import SNOWFLAKE_CONNECTION
@@ -242,3 +243,26 @@ def _write_actions_to_table(conn, stage, table, pattern, purge=True):
         raise AirflowFailException("#ERROR ON LOADING DATA")
 
     return success
+
+
+def _write_json_to_stage(conn, data_object, stage):
+
+    file_name = None
+    if data_object:
+
+        file_name = 'dump_' + str(randint(1, 999999999)).zfill(9) + '.json'
+  
+        with open(file_name, "w") as outfile:
+            json.dump(data_object, outfile)
+
+        try:
+            conn.execute(f"""PUT file://{file_name} @{stage}""")
+            if os.path.exists(file_name):
+                os.remove(file_name)
+        except snowflake.connector.errors.ProgrammingError as e:
+            print(e)
+            print('Error {0} ({1}): {2} ({3})'.format(e.errno, e.sqlstate, e.msg, e.sfqid))
+            if os.path.exists(file_name):
+                os.remove(file_name)
+
+    return file_name

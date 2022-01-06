@@ -1,12 +1,10 @@
 from datetime import datetime
-from decimal import Decimal
 import snowflake.connector
 from config import SNOWFLAKE_CONNECTION
 from airflow.exceptions import AirflowFailException
 import sys
-
 sys.path.append('/opt/airflow/')
-from dags.connectors.sf import _write_to_stage, _write_to_table, _clear_stage
+from dags.connectors.sf import _write_to_table, _clear_stage
 
 
 def _load(blocks, vat, vat_operations, manager, manager_operations, ratios, rates, prices, vaults_operations, public_vaults, **setup):
@@ -17,14 +15,6 @@ def _load(blocks, vat, vat_operations, manager, manager_operations, ratios, rate
     try:
         sf_transaction.execute("BEGIN TRANSACTION; ")
 
-
-        # records = []
-        # for i in blocks:
-        #     temp = i
-        #     temp[5] = Decimal(i[5])
-        #     records.append(temp)
-
-        # pattern = _write_to_stage(sf_transaction, records, f"{setup['db']}.staging.vaults_extracts")
         if blocks:
             _write_to_table(
                 sf_transaction,
@@ -35,16 +25,7 @@ def _load(blocks, vat, vat_operations, manager, manager_operations, ratios, rate
             _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", blocks)
 
         del blocks
-        # del records
 
-
-        # records = []
-        # for i in vat:
-        #     temp = i
-        #     temp[7] = Decimal(i[7])
-        #     records.append(temp)
-
-        # pattern = _write_to_stage(sf_transaction, records, f"{setup['db']}.staging.vaults_extracts")
         if vat:
             _write_to_table(
                 sf_transaction,
@@ -55,16 +36,7 @@ def _load(blocks, vat, vat_operations, manager, manager_operations, ratios, rate
             _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", vat)
 
         del vat
-        # del records
 
-
-        # records = []
-        # for i in manager:
-        #     temp = i
-        #     temp[7] = Decimal(i[7])
-        #     records.append(temp)
-
-        # pattern = _write_to_stage(sf_transaction, records, f"{setup['db']}.staging.vaults_extracts")
         if manager:
             _write_to_table(
                 sf_transaction,
@@ -75,10 +47,7 @@ def _load(blocks, vat, vat_operations, manager, manager_operations, ratios, rate
             _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", manager)
 
         del manager
-        # del records
 
-
-        # pattern = _write_to_stage(sf_transaction, ratios, f"{setup['db']}.staging.vaults_extracts")
         if ratios:
             _write_to_table(
                 sf_transaction,
@@ -90,8 +59,6 @@ def _load(blocks, vat, vat_operations, manager, manager_operations, ratios, rate
 
         del ratios
 
-
-        # pattern = _write_to_stage(sf_transaction, rates, f"{setup['db']}.staging.vaults_extracts")
         if rates:
             _write_to_table(
                 sf_transaction,
@@ -103,17 +70,6 @@ def _load(blocks, vat, vat_operations, manager, manager_operations, ratios, rate
 
         del rates
 
-
-        # records = []
-        # for i in prices:
-        #     temp = i
-        #     if type(i[4]) == str:
-        #         temp[4] = Decimal(i[4])
-        #     if type(i[5]) == str:
-        #         temp[5] = Decimal(i[5])
-        #     records.append(temp)
-
-        # pattern = _write_to_stage(sf_transaction, records, f"{setup['db']}.staging.vaults_extracts")
         if prices:
             _write_to_table(
                 sf_transaction,
@@ -124,10 +80,7 @@ def _load(blocks, vat, vat_operations, manager, manager_operations, ratios, rate
             _clear_stage(sf_transaction, f"{setup['db']}.staging.vaults_extracts", prices)
 
         del prices
-        # del records
 
-
-        # pattern = _write_to_stage(sf_transaction, vaults_operations, f"{setup['db']}.staging.vaults_extracts")
         if vaults_operations:
             _write_to_table(
                 sf_transaction,
@@ -139,8 +92,6 @@ def _load(blocks, vat, vat_operations, manager, manager_operations, ratios, rate
 
         del vaults_operations
 
-
-        # pattern = _write_to_stage(sf_transaction, vat_operations, f"{setup['db']}.staging.vaults_extracts")
         if vat_operations:
             _write_to_table(
                 sf_transaction,
@@ -152,8 +103,6 @@ def _load(blocks, vat, vat_operations, manager, manager_operations, ratios, rate
 
         del vat_operations
 
-
-        # pattern = _write_to_stage(sf_transaction, manager_operations, f"{setup['db']}.staging.vaults_extracts")
         if manager_operations:
             _write_to_table(
                 sf_transaction,
@@ -165,8 +114,6 @@ def _load(blocks, vat, vat_operations, manager, manager_operations, ratios, rate
 
         del manager_operations
 
-
-        # pattern = _write_to_stage(sf_transaction, public_vaults, f"{setup['db']}.staging.vaults_extracts")
         if public_vaults:
             _write_to_table(
                 sf_transaction,

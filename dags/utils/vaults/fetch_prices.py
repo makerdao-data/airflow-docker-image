@@ -1,3 +1,4 @@
+import json
 import os, sys
 sys.path.append('/opt/airflow/')
 from decimal import Decimal
@@ -8,6 +9,16 @@ from dags.connectors.sf import _write_to_stage, sf
 
 
 def _fetch_prices(new_blocks, oracles, external_prices, **setup):
+
+    external_prices_dump = sf.execute(f"""select parse_json(t.$1)
+        from @mcd.staging.vaults_extracts/{external_prices} ( FILE_FORMAT => mcd.staging.json_file_format ) t;
+    """).fetchall()
+
+    external_prices_data_odject = json.loads(external_prices_dump[0][0])
+
+    sf.execute(f"""
+        remove @mcd.staging.vaults_extracts/{external_prices};
+    """)
 
     prices = dict()
     for row in sf.execute(
@@ -42,9 +53,16 @@ def _fetch_prices(new_blocks, oracles, external_prices, **setup):
             tokens[token][2] = prices[token][1]
 
     blocks = []
-    for b in new_blocks:
-        if b[1] > setup['start_block']:
-            blocks.append([b[1], b[2]])
+    for load_id, block, timestamp, block_hash, miner, difficulty, size, extra_data, gas_limit, gas_used, tx_count in sf.execute(f"""
+        select t.$1, t.$2, t.$3, t.$4, t.$5, t.$6, t.$7, t.$8, t.$9, t.$10, t.$11 
+        from @mcd.staging.vaults_extracts/{new_blocks} ( FILE_FORMAT => mcd.staging.mcd_file_format ) t
+        order by t.$2;
+    """).fetchall():
+
+        block = int(block)
+
+        if block > setup['start_block']:
+            blocks.append([block, timestamp])
 
     signatures = [
         '0x296ba4ca62c6c21c95e828080cb8aec7481b71390585605300a8a76f9e95b527',
@@ -78,7 +96,7 @@ def _fetch_prices(new_blocks, oracles, external_prices, **setup):
                 else:
                     try:
                         market_price = get_gecko_price(
-                            int(datetime.timestamp(temp_block_timestamp)), token, external_prices
+                            int(datetime.timestamp(temp_block_timestamp)), token, external_prices_data_odject
                         )
                     except Exception as e:
                         # print(e)

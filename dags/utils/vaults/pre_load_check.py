@@ -25,23 +25,35 @@ def _pre_load_check(blocks=None, vat=None, manager=None, **setup):
         b_timestamp = datetime(2019, 11, 13)
 
     b_max = 0
-    for b in blocks:
-        if b[1] > b_max:
-            b_max = b[1]
+    blocks_counter = 0
+    for b in sf.execute(f"""
+        select t.$1, t.$2, t.$3, t.$4, t.$5, t.$6, t.$7, t.$8, t.$9, t.$10, t.$11 
+        from @mcd.staging.vaults_extracts/{blocks} ( FILE_FORMAT => mcd.staging.mcd_file_format ) t
+        order by t.$2;
+    """).fetchall():
+        if int(b[1]) > b_max:
+            b_max = int(b[1])
+            blocks_counter += 1
 
-    b_count = b_count + len(blocks)
+    b_count = b_count + blocks_counter
 
     test = b_max - b_min == b_count - 1
     info = "PRE:: BLOCKS continuity check: %s" % ('passed' if test else 'failed')
     content.append(info)
     tests.append(test)
 
+    vat_len = []
     uniq_VAT_operations = []
-    for i in vat:
+    for i in sf.execute(f"""
+        select t.$1, t.$2, t.$3, t.$4, t.$5, t.$6, t.$7, t.$8, t.$9, t.$10, t.$11, t.$12, t.$13, t.$14, t.$15, t.$16   
+        from @mcd.staging.vaults_extracts/{vat} ( FILE_FORMAT => mcd.staging.mcd_file_format ) t
+        order by t.$2;
+    """).fetchall():
+        vat_len.append(i)
         if i not in uniq_VAT_operations:
             uniq_VAT_operations.append(i)
 
-    test = len(vat) == len(uniq_VAT_operations)
+    test = len(vat_len) == len(uniq_VAT_operations)
     info = "PRE:: VAT uniqueness check: %s" % ('passed' if test else 'failed')
     content.append(info)
     tests.append(test)
@@ -73,12 +85,18 @@ def _pre_load_check(blocks=None, vat=None, manager=None, **setup):
     content.append(info)
     tests.append(test)
 
+    manager_len = []
     uniq_CDP_Manager_operations = []
-    for i in manager:
+    for i in sf.execute(f"""
+        select t.$1, t.$2, t.$3, t.$4, t.$5, t.$6, t.$7, t.$8, t.$9, t.$10, t.$11, t.$12, t.$13, t.$14, t.$15, t.$16   
+        from @mcd.staging.vaults_extracts/{manager} ( FILE_FORMAT => mcd.staging.mcd_file_format ) t
+        order by t.$2;
+    """).fetchall():
+        manager_len.append(i)
         if i not in uniq_CDP_Manager_operations:
             uniq_CDP_Manager_operations.append(i)
 
-    test = len(manager) == len(uniq_CDP_Manager_operations)
+    test = len(manager_len) == len(uniq_CDP_Manager_operations)
     info = "PRE:: CDP uniqueness check: %s" % ('passed' if test else 'failed')
     content.append(info)
     tests.append(test)

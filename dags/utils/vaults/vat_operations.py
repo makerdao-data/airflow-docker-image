@@ -1,3 +1,4 @@
+import json
 import os, sys
 sys.path.append('/opt/airflow/')
 from dags.connectors.sf import _write_to_stage, sf
@@ -23,7 +24,16 @@ def _vat_operations(vat, **setup):
         error,
         status,
         gas_used,
-    ) in vat:
+    ) in sf.execute(f"""
+        select t.$1, t.$2, t.$3, t.$4, t.$5, t.$6, t.$7, t.$8, t.$9, t.$10, t.$11, t.$12, t.$13, t.$14, t.$15, t.$16   
+        from @mcd.staging.vaults_extracts/{vat} ( FILE_FORMAT => mcd.staging.mcd_file_format ) t
+        order by t.$2;
+        """).fetchall():
+
+        block = int(block)
+        status = int(status)
+        arguments = json.loads(arguments.replace("\'", "\""))
+        outputs = json.loads(outputs.replace("\'", "\""))
 
         if status == 1:
 

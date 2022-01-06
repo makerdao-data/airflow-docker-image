@@ -38,7 +38,11 @@ def _fetch_ilks(vat, **setup):
 
     # new inits
     new_inits = []
-    for i in vat:
+    for i in sf.execute(f"""
+        select t.$1, t.$2, t.$3, t.$4, t.$5, t.$6, t.$7, t.$8, t.$9, t.$10, t.$11, t.$12, t.$13, t.$14, t.$15, t.$16   
+        from @mcd.staging.vaults_extracts/{vat} ( FILE_FORMAT => mcd.staging.mcd_file_format ) t
+        order by t.$2;
+    """).fetchall():
         if i[10] == 'init' and int(i[14]) == 1:
             new_inits.append([i[1], i[2], i[11][0]['value']])
 
