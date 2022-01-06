@@ -70,7 +70,7 @@ def _pre_load_check(blocks=None, vat=None, manager=None, **setup):
         WHERE date(timestamp) >= '{b_date}'; """
     ).fetchone()
 
-    count1 = count1 + len(vat)
+    count1 = count1 + len(vat_len)
 
     count2 = bq_query(
         f"""SELECT count(*)
