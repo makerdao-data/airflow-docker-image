@@ -46,7 +46,7 @@ def get_current_debt(ilk, urn, block, chian):
 @dag(
     default_args=default_args,
     schedule_interval='0 */6 * * *',
-    start_date=datetime(2022, 1, 7, 8)
+    start_date=datetime(2022, 1, 7, 8),
     max_active_runs=1,
     catchup=False,
 )
