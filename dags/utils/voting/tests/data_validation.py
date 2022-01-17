@@ -1,11 +1,10 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 import os
 import sys
 
 sys.path.append(os.environ.get('SYS_PATH'))
 from dags.connectors.sf import sf
 from dags.connectors.gcp import bq_query
-from dags.utils.voting.tooling.get_executives import get_execs
 
 
 def _data_validation(api_polls, execs, **setup):
