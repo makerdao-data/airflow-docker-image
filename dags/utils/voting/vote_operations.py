@@ -1,9 +1,37 @@
+import json
+from dags.connectors.sf import sf
 from dags.utils.voting.tooling.current_proxy import _current_proxy
 
 
 def _vote_operations(chief, polls, lastest_proxies_history, full_proxies_history, **setup):
 
     vote_operations = list()
+
+    db_chief = sf.execute(f"""
+        select to_varchar(load_id, 'YYYY-MM-DD HH:MI:SS') load_id,
+            block, 
+            to_varchar(timestamp, 'YYYY-MM-DD HH:MI:SS') timestamp,
+            breadcrumb,
+            tx_hash,
+            tx_index,
+            type,
+            value,
+            from_address,
+            to_address,
+            function,
+            arguments,
+            outputs,
+            error,
+            status,
+            gas_used,
+            gas_price
+        from mcd.staging.chief
+        order by block, breadcrumb;
+    """).fetchall()
+
+
+
+    full_chief = db_chief + chief
 
     etch_vote_new = dict()
     for (
@@ -24,8 +52,14 @@ def _vote_operations(chief, polls, lastest_proxies_history, full_proxies_history
         status,
         gas_used,
         gas_price,
-    ) in chief:
+    ) in full_chief:
         if function in ('etch', 'vote_new') and status == 1:
+            
+            if isinstance(arguments, str):
+                arguments = json.loads(arguments)
+            if isinstance(outputs, str):
+                outputs = json.loads(outputs)
+
             args = arguments[0]['value']
             while len(args) < 5:
                 args.append(None)
