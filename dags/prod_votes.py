@@ -124,40 +124,40 @@ def prod_votes_load():
 
         return {"votes": votes}
 
-    # @task()
-    # def load(task_dependency, chief, polls, api_polls, executives, votes, operations, setup):
+    @task()
+    def load(task_dependency, chief, polls, api_polls, executives, votes, operations, setup):
 
-    #     _load(chief, polls, api_polls, executives, votes, operations, **setup)
+        _load(chief, polls, api_polls, executives, votes, operations, **setup)
 
-    #     return True
+        return True
 
-    # @task()
-    # def update_current_voters_table(task_dependency, setup):
+    @task()
+    def update_current_voters_table(task_dependency, setup):
 
-    #     _update_current_voters_table(**setup)
+        _update_current_voters_table(**setup)
 
-    #     return True
+        return True
 
-    # @task()
-    # def data_validation(task_dependency, api_polls, execs, setup):
+    @task()
+    def data_validation(task_dependency, api_polls, execs, setup):
 
-    #     _data_validation(api_polls, execs, **setup)
+        _data_validation(api_polls, execs, **setup)
 
-    #     return True
+        return True
 
-    # @task()
-    # def count_votes(task_dependancy, setup):
+    @task()
+    def count_votes(task_dependancy, setup):
 
-    #     _count_votes(**setup)
+        _count_votes(**setup)
 
-    #     return True
+        return True
 
-    # @task()
-    # def voting_power_cache(task_dependancy, setup):
+    @task()
+    def voting_power_cache(task_dependancy, setup):
 
-    #     _voting_power_cache(**setup)
+        _voting_power_cache(**setup)
 
-    #     return True
+        return True
 
     setup = setup()
     chief = fetch_chief(setup, setup)
@@ -180,20 +180,20 @@ def prod_votes_load():
 
     gov_actions = votes(operations, operations["operations"], api_polls["api_polls"], operations["setup"])
 
-    # load_data = load(
-    #     [gov_actions, api_polls, execs],
-    #     chief["chief"],
-    #     polls["polls"],
-    #     api_polls["api_polls"],
-    #     execs["execs"],
-    #     gov_actions["votes"],
-    #     operations["operations"],
-    #     execs["setup"],
-    # )
-    # current_votes = update_current_voters_table(load_data, setup)
-    # validation = data_validation(current_votes, api_polls["api_polls"], execs["execs"], setup)
-    # votes_summary = count_votes(validation, setup)
-    # voting_power_cache(votes_summary, setup)
+    load_data = load(
+        [gov_actions, api_polls, execs],
+        chief["chief"],
+        polls["polls"],
+        api_polls["api_polls"],
+        execs["execs"],
+        gov_actions["votes"],
+        operations["operations"],
+        execs["setup"],
+    )
+    current_votes = update_current_voters_table(load_data, setup)
+    validation = data_validation(current_votes, api_polls["api_polls"], execs["execs"], setup)
+    votes_summary = count_votes(validation, setup)
+    voting_power_cache(votes_summary, setup)
 
 
 prod_votes_load = prod_votes_load()
