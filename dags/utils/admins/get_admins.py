@@ -69,7 +69,7 @@ def _get_admins():
         bcdpmanager = sf.execute(f"""
             select distinct substr(location, 0, 1) loc, concat('B-', substr(location, 3, length(location) - 5)) as id, curr_value as vault_param
             from edw_share.raw.storage_diffs
-            where where block > {start_block} and block <= {end_block} and
+            where block > {start_block} and block <= {end_block} and
                 contract = '0x3f30c2381cd8b917dd96eb2f1a4f96d91324bbed' and 
                 (location like '2[%].0' or location like '4[%].0' or location like '5[%].0') and
                 status
@@ -107,7 +107,7 @@ def _get_admins():
         oasiscdpmanager = sf.execute(f"""
             select distinct concat('O-', substr(curr_value, 3, 8)) as id, curr_value as urn, substr(location, 51, 64) as ilk, substr(location,3, 42) as ds_proxy
             from edw_share.raw.storage_diffs
-            where where block > {start_block} and block <= {end_block} and
+            where block > {start_block} and block <= {end_block} and
                 contract = '0x60762005be465901ca18ba34416b35143de72c0c' and 
                 location like '1[%' and 
                 status;
