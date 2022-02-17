@@ -41,7 +41,7 @@ def _load(**setup):
     sf.execute(
         f"""
 
-            insert into customers.dicu.parameters (
+            insert into maker.public.parameters (
             with clippers as
             (select distinct maker.public.etl_hextostr(substr(location, 3, 42)) as ilk, curr_value as address
             from edw_share.raw.storage_diffs
