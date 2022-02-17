@@ -58,8 +58,8 @@ def _load(**setup):
             select block, timestamp, tx_hash, order_index,
             iff(substr(location, length(location)) = '3', 'VAT.ilks.line', 'VAT.ilks.dust') as parameter,
             maker.public.etl_hextostr(substr(location, 3, 42)) as ilk,
-            etl_hextoint(prev_value) / pow(10, 45) as from_value,
-            etl_hextoint(curr_value) / pow(10, 45) as to_value
+            maker.public.etl_hextoint(prev_value) / pow(10, 45) as from_value,
+            maker.public.etl_hextoint(curr_value) / pow(10, 45) as to_value
             from edw_share.raw.storage_diffs
             where contract = '0x35d1b3f3d7966a1dfe207aa4514c12a259a0492b' and
             location like '2[%' and
@@ -75,8 +75,8 @@ def _load(**setup):
             when '1' then 'DC-IAM.ilks.gap'
             end as parameter,
             maker.public.etl_hextostr(substr(location, 3, 42)) as ilk,
-            etl_hextoint(prev_value) / pow(10, 45) as from_value,
-            etl_hextoint(curr_value) / pow(10, 45) as to_value
+            maker.public.etl_hextoint(prev_value) / pow(10, 45) as from_value,
+            maker.public.etl_hextoint(curr_value) / pow(10, 45) as to_value
             from edw_share.raw.storage_diffs
             where contract = '0xc7bdd1f2b16447dcf3de045c4a039a60ec2f0ba3' and
             location like '0[%' and
@@ -89,8 +89,8 @@ def _load(**setup):
             select block, timestamp, tx_hash, order_index,
             'DC-IAM.ilks.ttl'as parameter,
             maker.public.etl_hextostr(substr(location, 3, 42)) as ilk,
-            etl_hextoint(right(prev_value, 12)) as from_value,
-            etl_hextoint(right(curr_value, 12)) as to_value
+            maker.public.etl_hextoint(right(prev_value, 12)) as from_value,
+            maker.public.etl_hextoint(right(curr_value, 12)) as to_value
             from edw_share.raw.storage_diffs
             where contract = '0xc7bdd1f2b16447dcf3de045c4a039a60ec2f0ba3' and
             location like '0[%' and
@@ -104,8 +104,8 @@ def _load(**setup):
             select block, timestamp, tx_hash, order_index,
             'SPOTTER.ilks.mat' as parameter,
             maker.public.etl_hextostr(substr(location, 3, 42)) as ilk,
-            etl_hextoint(prev_value) / pow(10, 27) as from_value,
-            etl_hextoint(curr_value) / pow(10, 27) as to_value
+            maker.public.etl_hextoint(prev_value) / pow(10, 27) as from_value,
+            maker.public.etl_hextoint(curr_value) / pow(10, 27) as to_value
             from edw_share.raw.storage_diffs
             where contract = '0x65c79fcb50ca1594b025960e539ed7a9a6d434a3' and
             location like '1[%.1' and
@@ -117,9 +117,9 @@ def _load(**setup):
             select block, timestamp, tx_hash, order_index,
             'JUG.ilks.duty' as parameter,
             maker.public.etl_hextostr(substr(location, 3, 42)) as ilk,
-            iff(etl_hextoint(prev_value) > 0, round(pow(etl_hextoint(prev_value) / pow(10, 27), 606024365), 4) - 1, 0)
+            iff(maker.public.etl_hextoint(prev_value) > 0, round(pow(maker.public.etl_hextoint(prev_value) / pow(10, 27), 606024365), 4) - 1, 0)
             as from_value,
-            iff(etl_hextoint(curr_value) > 0, round(pow(etl_hextoint(curr_value) / pow(10, 27), 606024365), 4) - 1, 0)
+            iff(maker.public.etl_hextoint(curr_value) > 0, round(pow(maker.public.etl_hextoint(curr_value) / pow(10, 27), 606024365), 4) - 1, 0)
             as to_value
             from edw_share.raw.storage_diffs
             where contract = '0x19c0976f590d67707e62397c87829d896dc0f1f1' and
@@ -136,12 +136,12 @@ def _load(**setup):
             end as parameter,
             maker.public.etl_hextostr(substr(location, 3, 42)) as ilk,
             case substr(location, length(location))
-            when '1' then iff(etl_hextoint(prev_value) = 0, 0, etl_hextoint(prev_value) / pow(10, 18) - 1)
-            else etl_hextoint(prev_value) / pow(10, 45)
+            when '1' then iff(maker.public.etl_hextoint(prev_value) = 0, 0, maker.public.etl_hextoint(prev_value) / pow(10, 18) - 1)
+            else maker.public.etl_hextoint(prev_value) / pow(10, 45)
             end as from_value,
             case substr(location, length(location))
-            when '1' then iff(etl_hextoint(curr_value) = 0, 0, etl_hextoint(curr_value) / pow(10, 18) - 1)
-            else etl_hextoint(curr_value) / pow(10, 45)
+            when '1' then iff(maker.public.etl_hextoint(curr_value) = 0, 0, maker.public.etl_hextoint(curr_value) / pow(10, 18) - 1)
+            else maker.public.etl_hextoint(curr_value) / pow(10, 45)
             end as to_value
             from edw_share.raw.storage_diffs
             where contract = '0x135954d155898d42c90d2a57824c690e0c7bef1b' and
@@ -160,12 +160,12 @@ def _load(**setup):
             end as parameter,
             c.ilk,
             case substr(location, length(location))
-            when '6' then etl_hextoint(prev_value)
-            else etl_hextoint(prev_value) / pow(10, 27)
+            when '6' then maker.public.etl_hextoint(prev_value)
+            else maker.public.etl_hextoint(prev_value) / pow(10, 27)
             end as from_value,
             case substr(location, length(location))
-            when '6' then etl_hextoint(curr_value)
-            else etl_hextoint(curr_value) / pow(10, 27)
+            when '6' then maker.public.etl_hextoint(curr_value)
+            else maker.public.etl_hextoint(curr_value) / pow(10, 27)
             end as to_value
             from edw_share.raw.storage_diffs d, clippers c
             where d.contract = c.address and
@@ -179,8 +179,8 @@ def _load(**setup):
             select d.block, timestamp, tx_hash, order_index,
             'CLIPPER.chip' as parameter,
             c.ilk,
-            etl_hextoint(right(prev_value, 16)) / pow(10, 18) as from_value,
-            etl_hextoint(right(curr_value, 16)) / pow(10, 18) as to_value
+            maker.public.etl_hextoint(right(prev_value, 16)) / pow(10, 18) as from_value,
+            maker.public.etl_hextoint(right(curr_value, 16)) / pow(10, 18) as to_value
             from edw_share.raw.storage_diffs d, clippers c
             where d.contract = c.address and
             d.location = '8' and
@@ -194,8 +194,8 @@ def _load(**setup):
             select d.block, timestamp, tx_hash, order_index,
             'CLIPPER.tip' as parameter,
             c.ilk,
-            etl_hextoint(substr(prev_value, 1, len(prev_value)-16)) / pow(10, 45) as from_value,
-            etl_hextoint(substr(curr_value, 1, len(curr_value)-16)) / pow(10, 45) as to_value
+            maker.public.etl_hextoint(substr(prev_value, 1, len(prev_value)-16)) / pow(10, 45) as from_value,
+            maker.public.etl_hextoint(substr(curr_value, 1, len(curr_value)-16)) / pow(10, 45) as to_value
             from edw_share.raw.storage_diffs d, clippers c
             where d.contract = c.address and
             d.location = '8' and
@@ -214,8 +214,8 @@ def _load(**setup):
             when '11' then 'VOW.hump'
             end as parameter,
             null as ilk,
-            etl_hextoint(prev_value) / pow(10, 45) as from_value,
-            etl_hextoint(curr_value) / pow(10, 45) as to_value
+            maker.public.etl_hextoint(prev_value) / pow(10, 45) as from_value,
+            maker.public.etl_hextoint(curr_value) / pow(10, 45) as to_value
             from edw_share.raw.storage_diffs
             where contract = '0xa950524441892a31ebddf91d3ceefa04bf454466' and
             location in ('8', '9', '10', '11') and
@@ -227,8 +227,8 @@ def _load(**setup):
             select block, timestamp, tx_hash, order_index,
             'FLAPPER.beg' as parameter,
             null as ilk,
-            etl_hextoint(prev_value) / pow(10, 18) as from_value,
-            etl_hextoint(curr_value) / pow(10, 18) as to_value
+            maker.public.etl_hextoint(prev_value) / pow(10, 18) as from_value,
+            maker.public.etl_hextoint(curr_value) / pow(10, 18) as to_value
             from edw_share.raw.storage_diffs
             where contract = '0xc4269cc7acdedc3794b221aa4d9205f564e27f0d' and
             location = '4' and
@@ -240,8 +240,8 @@ def _load(**setup):
             select block, timestamp, tx_hash, order_index,
             'FLAPPER.ttl' as parameter,
             null as ilk,
-            etl_hextoint(right(prev_value, 12)) as from_value,
-            etl_hextoint(right(curr_value, 12)) as to_value
+            maker.public.etl_hextoint(right(prev_value, 12)) as from_value,
+            maker.public.etl_hextoint(right(curr_value, 12)) as to_value
             from edw_share.raw.storage_diffs
             where contract = '0xc4269cc7acdedc3794b221aa4d9205f564e27f0d' and
             location = '5' and
@@ -257,8 +257,8 @@ def _load(**setup):
             when '5' then 'FLOPPER.pad'
             end as parameter,
             null as ilk,
-            etl_hextoint(prev_value) / pow(10, 18) as from_value,
-            etl_hextoint(curr_value) / pow(10, 18) as to_value
+            maker.public.etl_hextoint(prev_value) / pow(10, 18) as from_value,
+            maker.public.etl_hextoint(curr_value) / pow(10, 18) as to_value
             from edw_share.raw.storage_diffs
             where contract = '0xa41b6ef151e06da0e34b009b86e828308986736d' and
             location in ('4', '5') and
@@ -270,8 +270,8 @@ def _load(**setup):
             select block, timestamp, tx_hash, order_index,
             'FLOPPER.ttl' as parameter,
             null as ilk,
-            etl_hextoint(right(prev_value, 12)) as from_value,
-            etl_hextoint(right(curr_value, 12)) as to_value
+            maker.public.etl_hextoint(right(prev_value, 12)) as from_value,
+            maker.public.etl_hextoint(right(curr_value, 12)) as to_value
             from edw_share.raw.storage_diffs
             where contract = '0xa41b6ef151e06da0e34b009b86e828308986736d' and
             location = '6' and
