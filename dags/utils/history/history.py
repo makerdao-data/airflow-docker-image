@@ -121,14 +121,15 @@ def _history():
             
             output.append(item + item_details)
 
-    pattern = _write_to_stage(sf, output, f"mcd.staging.vaults_extracts")
-    if pattern:
-        _write_to_table(
-            sf,
-            f"mcd.staging.vaults_extracts",
-            f"maker.history.vaults",
-            pattern,
-        )
-        _clear_stage(sf, f"mcd.staging.vaults_extracts", pattern)
+    if output:
+        pattern = _write_to_stage(sf, output, f"mcd.staging.vaults_extracts")
+        if pattern:
+            _write_to_table(
+                sf,
+                f"mcd.staging.vaults_extracts",
+                f"maker.history.vaults",
+                pattern,
+            )
+            _clear_stage(sf, f"mcd.staging.vaults_extracts", pattern)
     
     return
