@@ -97,7 +97,7 @@ def _history():
         for vault, ilk, dcollateral, dprincipal, dart, dfees in vaults_sum:
 
             item = [
-                day,
+                day.__str__()[:10],
                 vault,
                 ilk,
                 dcollateral,
@@ -119,7 +119,10 @@ def _history():
                         daily_operations[str(vault)][ilk]['fees']
                     ]
             
-            output.append(item + item_details)
+            if item[3:] == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]:
+                pass
+            else:
+                output.append(item + item_details)
 
     if output:
         pattern = _write_to_stage(sf, output, f"mcd.staging.vaults_extracts")
