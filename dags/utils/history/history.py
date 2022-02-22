@@ -24,8 +24,8 @@ def _history():
     end = datetime.utcnow() - timedelta(days=1)
 
     days_to_process = list()
-    days_to_process.append(start.date())
-    while start.date() < end.date():
+    days_to_process.append(start)
+    while start < end.date():
 
         d = start + timedelta(days=1)
         days_to_process.append(d.date())
@@ -119,10 +119,12 @@ def _history():
                         daily_operations[str(vault)][ilk]['fees']
                     ]
             
-            if item[3:] == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]:
+            row = item + item_details
+
+            if row[3:] == [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]:
                 pass
             else:
-                output.append(item + item_details)
+                output.append(row)
 
     if output:
         pattern = _write_to_stage(sf, output, f"mcd.staging.vaults_extracts")
