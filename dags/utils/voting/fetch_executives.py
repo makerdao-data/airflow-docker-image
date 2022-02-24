@@ -33,40 +33,34 @@ def _fetch_executives(**setup):
             soup = BeautifulSoup(page.content, "html.parser")
             entry = soup.find(id="readme").find("article").find("table").find("tbody").find("tr").find_all("td")
             
-            unresolved_title = entry[0].find("div").text
-            if "Template - [Executive Vote] " in unresolved_title:
-                
-                resolved = unresolved_title.replace("Template - [Executive Vote] ", "")
+            if len(entry) >= 4:
+
+                unresolved_title = entry[0].find("div").text
                 code = entry[3].find("div").text
+                code = code.lower()
 
-            elif len(entry) < 4:
+                if len(code) == 42:
 
-                resolved = unresolved_title
-                code = None
+                    if "Template - [Executive Vote] " in unresolved_title:
+                        resolved = unresolved_title.replace("Template - [Executive Vote] ", "")
+                    else:
+                        resolved = unresolved_title
 
-            else:
-                
-                resolved = unresolved_title
-                code = entry[3].find("div").text
-            
-            if code:
-                if code.lower() not in codes:
-                    if resolved not in titles:
-                        records = [
-                            [
-                                'executive',
-                                code.lower(),
-                                resolved,
-                                None,
-                                None,
-                                None,
-                                None,
-                                None,
-                                None,
+                    if code not in codes:
+                        if resolved not in titles:
+                            records = [
+                                [
+                                    'executive',
+                                    code,
+                                    resolved,
+                                    None,
+                                    None,
+                                    None,
+                                    None,
+                                    None,
+                                    None,
+                                ]
                             ]
-                        ]
 
-            else:
-                pass
 
     return records
