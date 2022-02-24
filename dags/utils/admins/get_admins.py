@@ -44,9 +44,11 @@ def _get_admins():
             if vault_param == '0xddb108893104de4e1c6d0e47c42237db4e617acc':
                 pass
             else:
+
+                all_managers_dict.setdefault(id, {})
                 if str(loc) == '2':
 
-                    all_managers_dict.setdefault(id, {})
+                    
                     all_managers_dict[id].setdefault('urn', vault_param)
                     all_managers_dict[id].setdefault('id', id)
                 
@@ -82,9 +84,10 @@ def _get_admins():
             if vault_param == '0x4bcad4920be1ca53f27656db49d31b23f9725ab0':
                 pass
             else:
+                
+                all_managers_dict.setdefault(id, {})
                 if str(loc) == '2':
 
-                    all_managers_dict.setdefault(id, {})
                     all_managers_dict[id].setdefault('urn', vault_param)
                     all_managers_dict[id].setdefault('id', id)
 
