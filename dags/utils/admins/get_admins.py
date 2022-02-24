@@ -141,11 +141,11 @@ def _get_admins():
                 pass
 
             vaults_admin.append([
-                all_managers_dict[id]['id'],
+                all_managers_dict[id]['id'] if 'id' in all_managers_dict[id] else None,
                 owner,
                 all_managers_dict[id]['ds_proxy'] if 'ds_proxy' in all_managers_dict[id] else None,
-                all_managers_dict[id]['urn'],
-                all_managers_dict[id]['ilk'],
+                all_managers_dict[id]['urn'] if 'urn' in all_managers_dict[id] else None,
+                all_managers_dict[id]['ilk'] if 'ilk' in all_managers_dict[id] else None,
             ])
 
 
