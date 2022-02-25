@@ -278,6 +278,29 @@ def _load(**setup):
             from_value != to_value and
             block > {setup['start_block']} and block <= {setup['end_block']} and status
 
+            union
+
+            // D3M DIRECT-AAVEV2-DAI (DssDirectDepositAaveDai) parameters (tau, bar)
+            select block, timestamp, tx_hash, order_index,
+            case location
+            when '1' then 'D3M.tau'
+            when '2' then 'D3M.bar'
+            end as parameter,
+            'DIRECT-AAVEV2-DAI' as ilk,
+            case location
+            when '2' then maker.public.etl_hextoint(prev_value) / pow(10,27)
+            else maker.public.etl_hextoint(prev_value)
+            end as from_value,
+            case location
+            when '2' then maker.public.etl_hextoint(curr_value) / pow(10,27)
+            else maker.public.etl_hextoint(curr_value)
+            end as to_value
+            from edw_share.raw.storage_diffs
+            where contract = '0xa13c0c8eb109f5a13c6c90fc26afb23beb3fb04a' and
+            from_value != to_value and
+            block > {setup['start_block']} and block <= {setup['end_block']} and
+            location in ('1', '2') and status
+
             ) p join edw_share.raw.transactions t on p.tx_hash = t.tx_hash
             order by block desc, order_index desc);
         """
