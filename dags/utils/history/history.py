@@ -24,11 +24,13 @@ def _history():
     end = datetime.utcnow() - timedelta(days=1)
 
     days_to_process = list()
-    days_to_process.append(start)
+    if start <= end.date():
+        days_to_process.append(start)
     while start < end.date():
 
         d = start + timedelta(days=1)
-        days_to_process.append(d.date())
+        if d <= end.date():
+            days_to_process.append(d)
         start = d
 
     output = list()
