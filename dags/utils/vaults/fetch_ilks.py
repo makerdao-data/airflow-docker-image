@@ -1,4 +1,5 @@
 import json
+import ast
 import requests
 from dags.connectors.sf import sf
 from dags.utils.vaults.tooling.get_coin_details import _get_coin_details
@@ -44,7 +45,7 @@ def _fetch_ilks(vat, **setup):
         order by t.$2;
     """).fetchall():
         if i[10] == 'init' and int(i[14]) == 1:
-            new_inits.append([i[1], i[2], i[11][0]['value']])
+            new_inits.append([i[1], i[2], ast.literal_eval(i[11][1:-1])['value']])
 
     all_inits = all_inits + new_inits
 
