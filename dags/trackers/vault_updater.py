@@ -181,7 +181,7 @@ def update_vault_data(sf):
 
     try:
         # list of available collaterals
-        ilks_query = 'SELECT ilk FROM internal.ilks; '
+        ilks_query = 'SELECT ilk FROM mcd.internal.ilks; '
 
         # current vaults list
         vaults_query = \
