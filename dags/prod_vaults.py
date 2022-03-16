@@ -273,6 +273,7 @@ def prod_vaults_load():
     curr_vaults = current_vaults(upload, setup)
     post = post_load_check(curr_vaults, setup)
     debt = debt_check(curr_vaults, setup)
+    update_vault_tracker(debt)
 
 
 prod_vaults_load = prod_vaults_load()

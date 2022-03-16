@@ -209,7 +209,8 @@ def prod_votes_load():
     validation = data_validation(current_votes, api_polls["api_polls"],
                                  execs["execs"], setup)
     votes_summary = count_votes(validation, setup)
-    voting_power_cache(votes_summary, setup)
+    voting_cache = voting_power_cache(votes_summary, setup)
+    update_gov_tracker(voting_cache)
 
 
 prod_votes_load = prod_votes_load()

@@ -46,6 +46,7 @@ def prod_history():
         return
 
     history()
+    update_dai_history()
 
 
 prod_history = prod_history()
