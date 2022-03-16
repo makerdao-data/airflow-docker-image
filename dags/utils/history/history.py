@@ -35,10 +35,12 @@ def _history():
 
     output = list()
 
+    days_to_process = ['2019-12-01', '2019-12-02', '2019-12-03']
+
     for day in days_to_process:
 
         vaults_sum = sf.execute(f"""
-            select vault, ilk, round(sum(dcollateral), 8), round(sum(dprincipal), 8), sum(dart / power(10,18)), sum(dfees)
+            select vault, ilk, round(sum(dcollateral), 8), round(sum(dcollateral * osm_price), 8), round(sum(dprincipal), 8), sum(dart / power(10,18)), sum(dfees)
             from mcd.public.vaults
             where date(timestamp) <= '{day}'
             group by vault, ilk
@@ -46,7 +48,7 @@ def _history():
         """).fetchall()
 
         vaults_day = sf.execute(f"""
-            select vault, ilk, round(dcollateral, 8), dart / power(10,18), round(dprincipal, 8), dfees
+            select vault, ilk, round(dcollateral, 8), round(dcollateral * osm_price, 8), dart / power(10,18), round(dprincipal, 8), dfees
             from mcd.public.vaults
             where date(timestamp) = '{day}'
             order by vault, ilk;
@@ -54,12 +56,14 @@ def _history():
 
         daily_operations = dict()
 
-        for vault, ilk, dcollateral, dart, dprincipal, dfees in vaults_day:
+        for vault, ilk, dcollateral, dcollateral_value, dart, dprincipal, dfees in vaults_day:
 
             daily_operations.setdefault(str(vault), {})
             daily_operations[str(vault)].setdefault(ilk, dict(
                 deposit=0,
+                deposit_value=0,
                 withdraw=0,
+                withdraw_value=0,
                 debt_generate=0,
                 debt_payback=0,
                 principal_generate=0,
@@ -70,10 +74,12 @@ def _history():
             if dcollateral < 0:
 
                 daily_operations[str(vault)][ilk]['withdraw'] += dcollateral
+                daily_operations[str(vault)][ilk]['withdraw_value'] += dcollateral_value
             
             if dcollateral > 0:
 
                 daily_operations[str(vault)][ilk]['deposit'] += dcollateral
+                daily_operations[str(vault)][ilk]['deposit_value'] += dcollateral_value
             
             if dart > 0:
 
@@ -96,24 +102,27 @@ def _history():
                 daily_operations[str(vault)][ilk]['fees'] += dfees
 
         
-        for vault, ilk, dcollateral, dprincipal, dart, dfees in vaults_sum:
+        for vault, ilk, dcollateral, dcollateral_value, dprincipal, dart, dfees in vaults_sum:
 
             item = [
                 day.__str__()[:10],
                 vault,
                 ilk,
                 dcollateral,
+                dcollateral_value,
                 dprincipal,
                 dart,
                 dfees
             ]
 
-            item_details = [0, 0, 0, 0, 0, 0, 0]
+            item_details = [0, 0, 0, 0, 0, 0, 0, 0, 0]
             if vault in daily_operations:
                 if ilk in daily_operations[str(vault)]:
                     item_details = [
                         daily_operations[str(vault)][ilk]['withdraw'],
+                        daily_operations[str(vault)][ilk]['withdraw_value'],
                         daily_operations[str(vault)][ilk]['deposit'],
+                        daily_operations[str(vault)][ilk]['deposit_value'],
                         daily_operations[str(vault)][ilk]['debt_generate'],
                         daily_operations[str(vault)][ilk]['debt_payback'],
                         daily_operations[str(vault)][ilk]['principal_generate'],
@@ -134,7 +143,7 @@ def _history():
             _write_to_table(
                 sf,
                 f"mcd.staging.vaults_extracts",
-                f"maker.history.vaults",
+                f"maker.history.test_vaults",
                 pattern,
             )
             _clear_stage(sf, f"mcd.staging.vaults_extracts", pattern)
