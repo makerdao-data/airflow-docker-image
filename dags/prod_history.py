@@ -1,9 +1,12 @@
 from datetime import datetime, timedelta
 from airflow.decorators import dag, task
 import os, sys
+
 sys.path.append('/opt/airflow/')
 
+from dags.connectors.sf import sf
 from dags.utils.history.history import _history
+from dags.utils.history.dai_history import update_dai_history
 
 # [START default_args]
 # These args will get passed on to each operator
@@ -27,11 +30,18 @@ default_args = {
     catchup=False,
 )
 def prod_history():
-    
+
     @task()
     def history():
 
         _history()
+
+        return
+
+    @task()
+    def update_dai_tx_history():
+
+        update_dai_history(sf)
 
         return
 

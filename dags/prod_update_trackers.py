@@ -1,4 +1,6 @@
 """
+CURRENTLY UNUSED.
+
 Dag to update trackers, currerntly vault and governance.
 .env file required in current directory.
 """
@@ -6,9 +8,8 @@ import sys
 from datetime import datetime, timedelta
 
 from airflow.decorators import dag, task
-from trackers.gov_updater import update_gov_data
-from trackers.vault_updater import sf_connect, update_vault_data
-
+# from trackers.gov_updater import update_gov_data
+# from trackers.vault_updater import sf_connect, update_vault_data
 
 sys.path.append('/opt/airflow/')
 

@@ -11,70 +11,9 @@ import plotly
 from dotenv import load_dotenv
 from plotly import graph_objs as go
 
+from ..connectors.chain import chain
 
-# Exceptions
-class EnvVariableError(Exception):
-    pass
-
-
-# Local deployment checking
-def get_variable(name):
-    if not os.environ.get(name):
-        # load env variables from .env if .env available
-        if os.path.isfile('.env'):
-            load_dotenv('.env')
-            try:
-                return os.environ[name]
-            except:
-                raise EnvVariableError("{} not available.".format(name))
-        else:
-            raise EnvVariableError(".env file not available.")
-
-    else:
-        # load value from env if available
-        return os.environ[name]
-
-
-# Snowflake connectivity
-SNOWFLAKE_CONNECTION = dict(
-    account=get_variable("SNOWFLAKE_ACCOUNT"),
-    user=get_variable("SNOWFLAKE_USER"),
-    password=get_variable("SNOWFLAKE_PASS"),
-    warehouse="COMPUTE_WH",
-    database="MCD",
-)
-
-
-def sf_connect():
-    connection = snowflake.connector.connect(**SNOWFLAKE_CONNECTION,
-                                             client_session_keep_alive=True)
-    cursor = connection.cursor()
-    return cursor
-
-
-# On-chain connectivity
-def connect_chain(http_hook=None):
-    method = "HTTP"
-    provider = Web3.HTTPProvider
-    hook = http_hook
-
-    try:
-        w3 = Web3(provider(hook, request_kwargs={"timeout": 60}))
-        if w3.isConnected():
-            print("Connected to %s: %s with latest block %d." %
-                  (method, hook, w3.eth.blockNumber))
-            return w3
-        else:
-            print("%s connection to %s failed." % (method, hook))
-            return None
-    except Exception as e:
-        print("Error while connecting to chain.")
-        print(e)
-
-
-chain = connect_chain(
-    'https://eth-mainnet.alchemyapi.io/v2/JwpUaHOv1XvnfW-3D-QMW08_StZF8qd4')
-
+# On-chain VAT data interaction
 vat_abi = """
             [{"constant":true,"inputs":[],"name":"debt",
             "outputs":[{"internalType":"uint256","name":"","type":"uint256"}],

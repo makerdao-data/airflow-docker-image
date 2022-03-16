@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta
 from airflow.decorators import dag, task
 import os, sys
+
 sys.path.append('/opt/airflow/')
+from dags.connectors.sf import sf
 from dags.utils.vaults.setup import _setup
 from dags.utils.vaults.cohesion_check import _cohesion_check
 from dags.utils.vaults.current_vaults import _current_vaults
@@ -24,7 +26,7 @@ from dags.utils.vaults.vat_operations import _vat_operations
 from dags.utils.vaults.vault_operations import _vault_operations
 from dags.utils.vaults.vaults import _vaults
 from dags.utils.vaults.debt_calculation import _debt_calculation
-
+from dags.trackers.vault_updater import update_vault_data
 
 # [START default_args]
 # These args will get passed on to each operator
@@ -38,7 +40,6 @@ default_args = {
 }
 # [END default_args]
 
-
 dataset = "bigquery-public-data.crypto_ethereum"
 
 
@@ -51,6 +52,7 @@ dataset = "bigquery-public-data.crypto_ethereum"
     catchup=False,
 )
 def prod_vaults_load():
+
     @task(multiple_outputs=True)
     def setup():
 
@@ -102,9 +104,12 @@ def prod_vaults_load():
         return {"opened_vaults": opened_vaults}
 
     @task(multiple_outputs=True)
-    def vault_operations(task_dependency, vat_operations, manager_operations, opened_vaults, setup):
+    def vault_operations(task_dependency, vat_operations, manager_operations,
+                         opened_vaults, setup):
 
-        vault_operations = _vault_operations(vat_operations, manager_operations, opened_vaults, **setup)
+        vault_operations = _vault_operations(vat_operations,
+                                             manager_operations, opened_vaults,
+                                             **setup)
 
         return {"vault_operations": vault_operations}
 
@@ -151,7 +156,8 @@ def prod_vaults_load():
         return {'prices': prices}
 
     @task(multiple_outputs=True)
-    def cohesion_check(task_dependency, blocks, vat, manager, rates, prices, setup):
+    def cohesion_check(task_dependency, blocks, vat, manager, rates, prices,
+                       setup):
 
         test = _cohesion_check(blocks, vat, manager, rates, prices, **setup)
 
@@ -165,18 +171,21 @@ def prod_vaults_load():
         return
 
     @task(multiple_outputs=True)
-    def vaults(task_dependency, ratios, vault_operations, rates, prices, setup):
+    def vaults(task_dependency, ratios, vault_operations, rates, prices,
+               setup):
 
-        public_vaults = _vaults(ratios, vault_operations, rates, prices, **setup)
+        public_vaults = _vaults(ratios, vault_operations, rates, prices,
+                                **setup)
 
         return {'public_vaults': public_vaults}
 
     @task()
-    def load(
-        task_dependency, blocks, vat, vat_operations, manager, manager_operations, ratios, rates, prices, vaults_operations, public_vaults, setup
-    ):
+    def load(task_dependency, blocks, vat, vat_operations, manager,
+             manager_operations, ratios, rates, prices, vaults_operations,
+             public_vaults, setup):
 
-        _load(blocks, vat, vat_operations, manager, manager_operations, ratios, rates, prices, vaults_operations, public_vaults, **setup)
+        _load(blocks, vat, vat_operations, manager, manager_operations, ratios,
+              rates, prices, vaults_operations, public_vaults, **setup)
 
         return
 
@@ -193,7 +202,7 @@ def prod_vaults_load():
         _post_load_check(**setup)
 
         return
-    
+
     @task()
     def debt_check(task_dependency, setup):
 
@@ -201,6 +210,12 @@ def prod_vaults_load():
 
         return
 
+    @task()
+    def update_vault_tracker(task_dependency):
+
+        update_vault_data(sf)
+
+        return
 
     setup = setup()
     blocks = fetch_blocks(setup, setup)
@@ -237,10 +252,10 @@ def prod_vaults_load():
         prices['prices'],
         setup,
     )
-    pre = pre_load_check([blocks, vat, manager], blocks['blocks'], vat['vat'], manager['manager'], setup)
-    public = vaults(
-        cohesion, ratios['ratios'], vault_ops['vault_operations'], rates['rates'], prices['prices'], setup
-    )
+    pre = pre_load_check([blocks, vat, manager], blocks['blocks'], vat['vat'],
+                         manager['manager'], setup)
+    public = vaults(cohesion, ratios['ratios'], vault_ops['vault_operations'],
+                    rates['rates'], prices['prices'], setup)
     upload = load(
         [blocks, vat, manager, ratios, rates, prices, vat_ops, cohesion, pre],
         blocks['blocks'],

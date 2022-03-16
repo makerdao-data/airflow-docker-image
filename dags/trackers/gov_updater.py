@@ -9,46 +9,6 @@ import pandas as pd
 from dotenv import load_dotenv
 
 
-# Exceptions
-class EnvVariableError(Exception):
-    pass
-
-
-# Local deployment checking
-def get_variable(name):
-    if not os.environ.get(name):
-        # load env variables from .env if .env available
-        if os.path.isfile('.env'):
-            load_dotenv('.env')
-            try:
-                return os.environ[name]
-            except:
-                raise EnvVariableError("{} not available.".format(name))
-        else:
-            raise EnvVariableError(".env file not available.")
-
-    else:
-        # load value from env if available
-        return os.environ[name]
-
-
-# Snowflake connectivity
-SNOWFLAKE_CONNECTION = dict(
-    account=get_variable("SNOWFLAKE_ACCOUNT"),
-    user=get_variable("SNOWFLAKE_USER"),
-    password=get_variable("SNOWFLAKE_PASS"),
-    warehouse="COMPUTE_WH",
-    database="MCD",
-)
-
-
-def sf_connect():
-    connection = snowflake.connector.connect(**SNOWFLAKE_CONNECTION,
-                                             client_session_keep_alive=True)
-    cursor = connection.cursor()
-    return cursor
-
-
 # Query execution
 def async_queries(sf, all_queries):
 
