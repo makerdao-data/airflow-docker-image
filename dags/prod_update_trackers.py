@@ -1,12 +1,17 @@
+"""
+CURRENTLY UNUSED.
+
+Dag to update trackers, currerntly vault and governance.
+.env file required in current directory.
+"""
+import sys
 from datetime import datetime, timedelta
+
 from airflow.decorators import dag, task
-import os, sys
+# from trackers.gov_updater import update_gov_data
+# from trackers.vault_updater import sf_connect, update_vault_data
 
 sys.path.append('/opt/airflow/')
-
-from dags.connectors.sf import sf
-from dags.utils.history.history import _history
-from dags.utils.history.dai_history import update_dai_history
 
 # [START default_args]
 # These args will get passed on to each operator
@@ -24,29 +29,18 @@ default_args = {
 # [START instantiate_dag]
 @dag(
     default_args=default_args,
-    schedule_interval='0 1 * * *',
-    start_date=datetime(2022, 2, 18, 1),
+    schedule_interval='*/20 * * * *',
+    start_date=datetime(2022, 3, 16, 0),
     max_active_runs=1,
     catchup=False,
 )
-def prod_history():
+def update_trackers(sf) -> None:
 
     @task()
-    def history():
-
-        _history()
-
-        return
-
-    @task()
-    def update_dai_tx_history():
-
-        update_dai_history(sf)
-
-        return
-
-    history()
-    # update_dai_tx_history()
+    def workflow() -> None:
+        update_vault_data(sf)
+        update_gov_data(sf)
 
 
-prod_history = prod_history()
+sf = sf_connect()
+update_trackers = update_trackers(sf)

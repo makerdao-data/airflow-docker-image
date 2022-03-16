@@ -3,6 +3,7 @@ from airflow.decorators import dag, task
 import os, sys
 
 sys.path.append('/opt/airflow/')
+from dags.connectors.sf import sf
 from dags.utils.voting.setup import _setup
 from dags.utils.voting.fetch_chief import _fetch_chief
 from dags.utils.voting.fetch_polls import _fetch_polls
@@ -18,7 +19,7 @@ from dags.utils.voting.update_current_voters_table import _update_current_voters
 from dags.utils.voting.tests.data_validation import _data_validation
 from dags.utils.voting.count_votes import _count_votes
 from dags.utils.voting.voting_power_cache import _voting_power_cache
-
+from dags.trackers.gov_updater import update_gov_data
 
 # [START default_args]
 # These args will get passed on to each operator
@@ -31,7 +32,6 @@ default_args = {
     "retry_delay": timedelta(minutes=1),
 }
 # [END default_args]
-
 
 dataset = "bigquery-public-data.crypto_ethereum"
 mkr_address = "0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2"
@@ -49,6 +49,7 @@ dschief1_2_date = datetime(2021, 1, 1)
     catchup=False,
 )
 def prod_votes_load():
+
     @task(multiple_outputs=True)
     def setup():
 
@@ -88,7 +89,8 @@ def prod_votes_load():
     @task(multiple_outputs=True)
     def full_proxies_history(task_dependency, up, down, setup):
 
-        latest_proxies_history, full_proxies_history = _full_proxies_history(up, down, **setup)
+        latest_proxies_history, full_proxies_history = _full_proxies_history(
+            up, down, **setup)
 
         return {
             "latest_proxies_history": latest_proxies_history,
@@ -111,9 +113,11 @@ def prod_votes_load():
         return {"execs": execs, "setup": setup}
 
     @task(multiple_outputs=True)
-    def vote_operations(task_dependency, chief, polls, latest_proxies_history, full_proxies_history, setup):
+    def vote_operations(task_dependency, chief, polls, latest_proxies_history,
+                        full_proxies_history, setup):
 
-        operations = _vote_operations(chief, polls, latest_proxies_history, full_proxies_history, **setup)
+        operations = _vote_operations(chief, polls, latest_proxies_history,
+                                      full_proxies_history, **setup)
 
         return {"operations": operations, "setup": setup}
 
@@ -125,7 +129,8 @@ def prod_votes_load():
         return {"votes": votes}
 
     @task()
-    def load(task_dependency, chief, polls, api_polls, executives, votes, operations, setup):
+    def load(task_dependency, chief, polls, api_polls, executives, votes,
+             operations, setup):
 
         _load(chief, polls, api_polls, executives, votes, operations, **setup)
 
@@ -159,13 +164,22 @@ def prod_votes_load():
 
         return True
 
+    @task
+    def update_gov_tracker(task_dependency):
+
+        update_gov_data(sf)
+
+        return True
+
     setup = setup()
     chief = fetch_chief(setup, setup)
     polls = fetch_polls(setup, setup)
 
     proxies_up = create_proxies(setup, setup)
     proxies_down = break_proxies(setup, setup)
-    history = full_proxies_history([proxies_up, proxies_down], proxies_up["up"], proxies_down["down"], setup)
+    history = full_proxies_history([proxies_up, proxies_down],
+                                   proxies_up["up"], proxies_down["down"],
+                                   setup)
 
     api_polls = fetch_api_polls(setup, setup)
     execs = fetch_executives(setup, setup)
@@ -178,7 +192,8 @@ def prod_votes_load():
         polls["setup"],
     )
 
-    gov_actions = votes(operations, operations["operations"], api_polls["api_polls"], operations["setup"])
+    gov_actions = votes(operations, operations["operations"],
+                        api_polls["api_polls"], operations["setup"])
 
     load_data = load(
         [gov_actions, api_polls, execs],
@@ -191,9 +206,11 @@ def prod_votes_load():
         execs["setup"],
     )
     current_votes = update_current_voters_table(load_data, setup)
-    validation = data_validation(current_votes, api_polls["api_polls"], execs["execs"], setup)
+    validation = data_validation(current_votes, api_polls["api_polls"],
+                                 execs["execs"], setup)
     votes_summary = count_votes(validation, setup)
-    voting_power_cache(votes_summary, setup)
+    voting_cache = voting_power_cache(votes_summary, setup)
+    update_gov_tracker(voting_cache)
 
 
 prod_votes_load = prod_votes_load()
