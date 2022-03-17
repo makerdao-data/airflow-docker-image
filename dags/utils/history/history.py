@@ -134,7 +134,7 @@ def _history():
             _write_to_table(
                 sf,
                 f"mcd.staging.vaults_extracts",
-                f"maker.history.test_vaults",
+                f"maker.history.vaults",
                 pattern,
             )
             _clear_stage(sf, f"mcd.staging.vaults_extracts", pattern)
