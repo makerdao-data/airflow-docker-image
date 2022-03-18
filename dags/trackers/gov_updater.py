@@ -1,3 +1,5 @@
+
+  
 import json
 import os
 
@@ -10,39 +12,14 @@ from dotenv import load_dotenv
 
 
 # Query execution
-def async_queries(sf, all_queries):
-
-    started_queries = []
-    for i in all_queries:
-        sf.execute(i["query"])
-        started_queries.append(dict(qid=sf.sfqid, id=i["id"]))
-
+def exec_queries(sf, all_queries):
     all_results = {}
-    limit = len(started_queries)
-    control = 0
-
-    while limit != control:
-
-        for i in started_queries:
-
-            if i["id"] not in all_results.keys():
-
-                try:
-                    check_results = sf.execute(f"""
-                        SELECT *
-                        FROM table(result_scan('{i["qid"]}'))
-                        """)
-
-                    if isinstance(check_results, SnowflakeCursor):
-                        df = check_results.fetch_pandas_all()
-                        result = df.where(pd.notnull(df), None).values.tolist()
-                        all_results[i["id"]] = result
-
-                except Exception as e:
-                    print(str(e))
-
-        control = len(all_results.keys())
-
+    try:
+        for i in all_queries:
+            result = sf.execute(i["query"]).fetchall()
+            all_results[i["id"]] = result
+    except Exception as e:
+        print(e)
     return all_results
 
 
@@ -120,16 +97,6 @@ def html_table(
 
 
 def update_gov_data(sf) -> None:
-    # test snowflake connection and reconnect if necessary
-    try:
-        if sf.is_closed():
-            sf = sf_connect()
-        if sf.is_closed():
-            raise Exception("Reconnection failed")
-
-    except Exception as e:
-        print(e)
-        return dict(status="failure", data="Database connection error")
 
     try:
 
@@ -187,7 +154,7 @@ def update_gov_data(sf) -> None:
 
         # snowflake data ingestion
 
-        sf_responses = async_queries(sf, all_queries)
+        sf_responses = exec_queries(sf, all_queries)
         voters = sf_responses["voters"]
         yays = sf_responses["yays"]
         titles = sf_responses["titles"]

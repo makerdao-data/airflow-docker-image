@@ -210,7 +210,7 @@ def prod_votes_load():
                                  execs["execs"], setup)
     votes_summary = count_votes(validation, setup)
     voting_cache = voting_power_cache(votes_summary, setup)
-    # update_gov_tracker(voting_cache)
+    update_gov_tracker(voting_cache)
 
 
 prod_votes_load = prod_votes_load()
