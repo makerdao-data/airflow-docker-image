@@ -11,7 +11,7 @@ import plotly
 from dotenv import load_dotenv
 from plotly import graph_objs as go
 
-from ..connectors.chain import chain
+from dags.connectors.chain import chain
 
 # On-chain VAT data interaction
 vat_abi = """
@@ -51,41 +51,15 @@ def get_vat_data():
     return Line
 
 
-# Query executor
-def async_queries(sf, all_queries) -> dict:
-
-    started_queries = []
-    for i in all_queries:
-        sf.execute(i["query"])
-        started_queries.append(dict(qid=sf.sfqid, id=i["id"]))
-
+# Query execution
+def exec_queries(sf, all_queries):
     all_results = {}
-    limit = len(started_queries)
-    control = 0
-
-    while limit != control:
-
-        for i in started_queries:
-
-            if i["id"] not in all_results.keys():
-
-                try:
-
-                    check_results = sf.execute(f"""
-                        SELECT *
-                        FROM table(result_scan('{i["qid"]}'))
-                        """)
-
-                    if isinstance(check_results, SnowflakeCursor):
-                        df = check_results.fetch_pandas_all()
-                        result = df.where(pd.notnull(df), None).values.tolist()
-                        all_results[i["id"]] = result
-
-                except Exception as e:
-                    print(str(e))
-
-        control = len(all_results.keys())
-
+    try:
+        for i in all_queries:
+            result = sf.execute(i["query"]).fetchall()
+            all_results[i["id"]] = result
+    except Exception as e:
+        print(e)
     return all_results
 
 
@@ -181,7 +155,7 @@ def update_vault_data(sf):
 
     try:
         # list of available collaterals
-        ilks_query = 'SELECT ilk FROM internal.ilks; '
+        ilks_query = 'SELECT ilk FROM mcd.internal.ilks; '
 
         # current vaults list
         vaults_query = \
@@ -259,7 +233,7 @@ def update_vault_data(sf):
             dict(query=sin_query, id='sin')
         ]
 
-        sf_responses = async_queries(sf, all_queries)
+        sf_responses = exec_queries(sf, all_queries)
 
         vaults = sf_responses['vaults']
         ilks = sf_responses['ilks']
