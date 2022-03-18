@@ -142,16 +142,6 @@ def link(item, url, title=None) -> str:
 
 # Obtain main page data
 def update_vault_data(sf):
-    # test snowflake connection and reconnect if necessary
-    try:
-        if sf.is_closed():
-            sf = sf_connect()
-        if sf.is_closed():
-            raise Exception("Reconnection failed")
-
-    except Exception as e:
-        print(e)
-        return dict(status="failure", data="Database connection error")
 
     try:
         # list of available collaterals

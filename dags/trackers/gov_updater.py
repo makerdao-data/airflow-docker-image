@@ -103,8 +103,8 @@ def update_gov_data(sf) -> None:
         voters_query = f"""
             select o.voter, '', o.stake, o.yay1, o.yay2, o.yay3, o.yay4, o.yay5, o.since, o.last_voting, d.name
             FROM (SELECT distinct case when p.from_address is null then v.voter else p.from_address end voter, '', v.stake, v.yay1, v.yay2, v.yay3, v.yay4, v.yay5, v.since, v.last_voting
-            FROM mcd.public.current_voters v
-            LEFT JOIN mcd.internal.vote_proxies p
+            FROM {os.getenv("MCDGOV_DB", "mcd")}.public.current_voters v
+            LEFT JOIN {os.getenv("MCDGOV_DB", "mcd")}.internal.vote_proxies p
             on v.voter = p.proxy
             ORDER BY v.stake desc) o
             LEFT JOIN delegates.public.delegates d
