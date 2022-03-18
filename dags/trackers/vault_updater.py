@@ -209,6 +209,7 @@ def update_vault_data(sf):
                 when i.type = 'stablecoin' then 'STABLE'
                 when i.type = 'coin' then 'NON-STABLE'
                 when SPLIT_PART(v.ilk, '-', 0) = 'DIRECT' then 'NON-STABLE'
+                when i.type = 'None' = 'NON-STABLE'
                 else upper(i.type)
                 end type,
                 sum( v.collateral * v.osm_price ) value_locked
