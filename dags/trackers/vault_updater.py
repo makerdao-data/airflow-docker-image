@@ -53,12 +53,13 @@ def get_vat_data():
 
 # Query execution
 def exec_queries(sf, all_queries):
-
     all_results = {}
-    for i in all_queries:
-        result = sf.execute(i["query"]).fetchall()
-        all_results[i["id"]] = result
-
+    try:
+        for i in all_queries:
+            result = sf.execute(i["query"]).fetchall()
+            all_results[i["id"]] = result
+    except Exception as e:
+        print(e)
     return all_results
 
 
