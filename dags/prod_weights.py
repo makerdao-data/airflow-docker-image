@@ -17,7 +17,7 @@ from dags.utils.weights.gsheet_push import _gsheet_push
 # You can override them on a per-task basis during operator initialization
 default_args = {
     "owner": "airflow",
-    "email": ["piotr.m.klis@gmail.com"],
+    "email": ["piotr.m.klis@gmail.com", "airflow@data.makerdao.network"],
     "email_on_failure": True,
     "retries": 0,
     "retry_delay": timedelta(minutes=1),
