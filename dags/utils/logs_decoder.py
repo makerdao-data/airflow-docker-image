@@ -93,7 +93,6 @@ def decode_logs(r):
             Kick['tx_hash'] = i[1]
             Kick['block'] = i[7]
 
-            print(Kick)
             events.append(Kick)
 
         elif i[5][0] == '0x05e309fd6ce72f2ab888a20056bb4210df08daed86f21f95053deb19964d86b1':
@@ -118,7 +117,6 @@ def decode_logs(r):
             Take['tx_hash'] = i[1]
             Take['block'] = i[7]
 
-            print(Take)
             events.append(Take)
 
         elif i[5][0] == '0x275de7ecdd375b5e8049319f8b350686131c219dd4dc450a08e9cf83b03c865f':
@@ -143,7 +141,6 @@ def decode_logs(r):
             Redo['tx_hash'] = i[1]
             Redo['block'] = i[7]
 
-            print(Redo)
             events.append(Redo)
 
         else:

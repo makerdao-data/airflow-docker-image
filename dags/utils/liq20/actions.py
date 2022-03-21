@@ -280,7 +280,6 @@ def get_clipper_actions(load_id, start_block, end_block, start_time, end_time, D
                 raise AirflowFailException("#ERROR ON GATHERING DATA")
 
             try:
-                print(osm_price)
                 actions.append(
                     [
                         load_id,

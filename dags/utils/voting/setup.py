@@ -102,6 +102,4 @@ def _setup(environment):
         old_vote_proxy_factory=old_vote_proxy_factory,
     )
 
-    print(output)
-
     return output
