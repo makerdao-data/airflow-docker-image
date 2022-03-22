@@ -4,6 +4,7 @@ from datetime import datetime
 
 import snowflake.connector
 from snowflake.connector.cursor import SnowflakeCursor
+from airflow.exceptions import AirflowFailException
 from web3 import Web3
 
 import pandas as pd
@@ -375,5 +376,4 @@ def update_vault_data(sf):
         # must properly jsonize collaterals_data
 
     except Exception as e:
-        print(e)
-        return dict(status="failure", data="Backend error: %s" % e)
+        raise AirflowFailException(e)

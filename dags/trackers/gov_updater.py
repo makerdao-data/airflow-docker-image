@@ -1,11 +1,10 @@
-
-  
 import json
 import os
 
 import requests
 import snowflake.connector
 from snowflake.connector.cursor import SnowflakeCursor
+from airflow.exceptions import AirflowFailException
 
 import pandas as pd
 from dotenv import load_dotenv
@@ -307,5 +306,4 @@ def update_gov_data(sf) -> None:
         return None
 
     except Exception as e:
-        print(e)
-        return dict(status="failure", data="Backend error: %s" % e)
+        raise AirflowFailException(e)

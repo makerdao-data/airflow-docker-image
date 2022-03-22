@@ -1,6 +1,7 @@
 """
 Updates Dai Transfer History
 """
+from airflow.exceptions import AirflowFailException
 
 
 def update_dai_history(sf):
@@ -22,5 +23,4 @@ def update_dai_history(sf):
     try:
         sf.execute(insert_query)
     except Exception as e:
-        print(e)
-        return dict(status="failure", data="Backend error: %s" % e)
+        raise AirflowFailException(e)
