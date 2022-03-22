@@ -1,5 +1,4 @@
 import json
-import os
 from datetime import datetime
 
 import snowflake.connector
@@ -11,6 +10,8 @@ import plotly
 from dotenv import load_dotenv
 from plotly import graph_objs as go
 
+import os, sys
+sys.path.append('/opt/airflow/')
 from dags.connectors.chain import chain
 
 # On-chain VAT data interaction
