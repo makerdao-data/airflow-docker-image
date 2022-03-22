@@ -4,8 +4,14 @@ Updates Dai Transfer History
 
 
 def update_dai_history(sf):
+    
     top_block = sf.execute(
-        "select max(BLOCK) from MAKER.HISTORY.DAI_TRANSFERS").fetchall()[0][0]
+        "select max(BLOCK) from MAKER.HISTORY.DAI_TRANSFERS").fetchone()
+    
+    if top_block:
+        top_block = top_block[0]
+    else:
+        top_block = 8928673
 
     insert_query = f"""insert into MAKER.HISTORY.DAI_TRANSFERS (
         select block, timestamp, tx_hash, 'DAI' as token,
@@ -23,4 +29,4 @@ def update_dai_history(sf):
         sf.execute(insert_query)
     except Exception as e:
         print(e)
-        return dict(status="failure", data="Backend error: %s" % e)
+        return dict(status="failure", data=f"Backend error: {e}")
