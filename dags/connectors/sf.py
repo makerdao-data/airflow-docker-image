@@ -21,7 +21,6 @@ import json
 sys.path.append('/opt/airflow/')
 from config import SNOWFLAKE_CONNECTION
 
-
 connection = snowflake.connector.connect(**SNOWFLAKE_CONNECTION)
 sf = connection.cursor()
 sf_dict = connection.cursor(snowflake.connector.DictCursor)
@@ -37,7 +36,9 @@ def write_to_stage(records, stage):
     if records:
         csv_file = open('dump.csv', 'w')
         for record in records:
-            csv_file.write('%s\n' % '|'.join([attribute.__str__().replace('|', '') for attribute in record]))
+            csv_file.write('%s\n' % '|'.join(
+                [attribute.__str__().replace('|', '')
+                 for attribute in record]))
         csv_file.close()
 
         try:
@@ -47,7 +48,8 @@ def write_to_stage(records, stage):
                 os.remove('dump.csv')
         except snowflake.connector.errors.ProgrammingError as e:
             print(e)
-            print('Error {0} ({1}): {2} ({3})'.format(e.errno, e.sqlstate, e.msg, e.sfqid))
+            print('Error {0} ({1}): {2} ({3})'.format(e.errno, e.sqlstate,
+                                                      e.msg, e.sfqid))
             if os.path.exists('dump.csv'):
                 os.remove('dump.csv')
             raise AirflowFailException("#ERROR ON LOADING DATA")
@@ -61,12 +63,12 @@ def write_to_table(stage, table, purge=True):
     try:
         sf.execute(
             "COPY INTO %s FROM @%s FILE_FORMAT=(TYPE=CSV,FIELD_DELIMITER = '|',NULL_IF='None') PURGE=%s; "
-            % (table, stage, purge)
-        )
+            % (table, stage, purge))
         success = True
     except snowflake.connector.errors.ProgrammingError as e:
         print(e)
-        print('Error {0} ({1}): {2} ({3})'.format(e.errno, e.sqlstate, e.msg, e.sfqid))
+        print('Error {0} ({1}): {2} ({3})'.format(e.errno, e.sqlstate, e.msg,
+                                                  e.sfqid))
         raise AirflowFailException("#ERROR ON LOADING DATA")
 
     return success
@@ -85,7 +87,9 @@ def transaction_write_to_stage(conn, records, stage):
     if records:
         csv_file = open('dump.csv', 'w')
         for record in records:
-            csv_file.write('%s\n' % '|'.join([attribute.__str__().replace('|', '') for attribute in record]))
+            csv_file.write('%s\n' % '|'.join(
+                [attribute.__str__().replace('|', '')
+                 for attribute in record]))
         csv_file.close()
 
         conn.execute("PUT file://dump.csv @%s" % stage)
@@ -100,8 +104,7 @@ def transaction_write_to_table(conn, stage, table, purge=True):
 
     conn.execute(
         "COPY INTO %s FROM @%s FILE_FORMAT=(TYPE=CSV,FIELD_DELIMITER = '|',NULL_IF='None') PURGE=%s; "
-        % (table, stage, purge)
-    )
+        % (table, stage, purge))
 
     return True
 
@@ -112,7 +115,9 @@ def updated_write_to_stage(records, stage):
     if records:
         csv_file = open('dump.csv', 'w')
         for record in records:
-            csv_file.write('%s\n' % '|'.join([attribute.__str__().replace('|', '') for attribute in record]))
+            csv_file.write('%s\n' % '|'.join(
+                [attribute.__str__().replace('|', '')
+                 for attribute in record]))
         csv_file.close()
 
         sf.execute("PUT file://dump.csv @%s" % stage)
@@ -129,8 +134,7 @@ def updated_write_to_table(stage, table, purge=True):
     success = False
     sf.execute(
         "COPY INTO %s FROM @%s FILE_FORMAT=(TYPE=CSV,FIELD_DELIMITER = '|',NULL_IF='None') PURGE=%s; "
-        % (table, stage, purge)
-    )
+        % (table, stage, purge))
     success = True
 
     return success
@@ -150,7 +154,8 @@ def _write_barks_to_table(conn, stage, table, pattern, purge=True):
 
     except snowflake.connector.errors.ProgrammingError as e:
         print(e)
-        print('Error {0} ({1}): {2} ({3})'.format(e.errno, e.sqlstate, e.msg, e.sfqid))
+        print('Error {0} ({1}): {2} ({3})'.format(e.errno, e.sqlstate, e.msg,
+                                                  e.sfqid))
         raise AirflowFailException("#ERROR ON LOADING DATA")
 
     return success
@@ -165,7 +170,9 @@ def custom_write_to_stage(records, stage):
 
         csv_file = open(file_name, 'w')
         for record in records:
-            csv_file.write('%s\n' % '|'.join([attribute.__str__().replace('|', '') for attribute in record]))
+            csv_file.write('%s\n' % '|'.join(
+                [attribute.__str__().replace('|', '')
+                 for attribute in record]))
         csv_file.close()
 
         try:
@@ -175,7 +182,8 @@ def custom_write_to_stage(records, stage):
                 os.remove(file_name)
         except snowflake.connector.errors.ProgrammingError as e:
             print(e)
-            print('Error {0} ({1}): {2} ({3})'.format(e.errno, e.sqlstate, e.msg, e.sfqid))
+            print('Error {0} ({1}): {2} ({3})'.format(e.errno, e.sqlstate,
+                                                      e.msg, e.sfqid))
             if os.path.exists(file_name):
                 os.remove(file_name)
             raise AirflowFailException("#ERROR ON LOADING DATA")
@@ -192,7 +200,9 @@ def _write_to_stage(conn, records, stage):
 
         csv_file = open(file_name, 'w')
         for record in records:
-            csv_file.write('%s\n' % '|'.join([attribute.__str__().replace('|', '') for attribute in record]))
+            csv_file.write('%s\n' % '|'.join(
+                [attribute.__str__().replace('|', '')
+                 for attribute in record]))
         csv_file.close()
 
         try:
@@ -201,7 +211,8 @@ def _write_to_stage(conn, records, stage):
                 os.remove(file_name)
         except snowflake.connector.errors.ProgrammingError as e:
             print(e)
-            print('Error {0} ({1}): {2} ({3})'.format(e.errno, e.sqlstate, e.msg, e.sfqid))
+            print('Error {0} ({1}): {2} ({3})'.format(e.errno, e.sqlstate,
+                                                      e.msg, e.sfqid))
             if os.path.exists(file_name):
                 os.remove(file_name)
             raise AirflowFailException("#ERROR ON LOADING DATA")
@@ -226,8 +237,7 @@ def _write_actions_to_table(conn, stage, table, pattern, purge=True):
 
     success = False
     try:
-        conn.execute(
-            f"""COPY INTO {table}(
+        conn.execute(f"""COPY INTO {table}(
                 LOAD_ID, AUCTION_ID, TIMESTAMP, BLOCK, TX_HASH,
                 TYPE, CALLER, DATA, DEBT, INIT_PRICE, MAX_COLLATERAL_AMT,
                 AVAILABLE_COLLATERAL, SOLD_COLLATERAL, MAX_PRICE,
@@ -235,11 +245,12 @@ def _write_actions_to_table(conn, stage, table, pattern, purge=True):
                 KEEPER, INCENTIVES, URN, GAS_USED, STATUS, REVERT_REASON,
                 ROUND, BREADCRUMB, ILK, MKT_PRICE
                 ) FROM @{stage}/{pattern}.gz FILE_FORMAT=(TYPE=CSV,FIELD_DELIMITER = '|',NULL_IF='None') PURGE={purge}; """
-        )
+                     )
         success = True
     except snowflake.connector.errors.ProgrammingError as e:
         print(e)
-        print('Error {0} ({1}): {2} ({3})'.format(e.errno, e.sqlstate, e.msg, e.sfqid))
+        print('Error {0} ({1}): {2} ({3})'.format(e.errno, e.sqlstate, e.msg,
+                                                  e.sfqid))
         raise AirflowFailException("#ERROR ON LOADING DATA")
 
     return success
@@ -251,7 +262,7 @@ def _write_json_to_stage(conn, data_object, stage):
     if data_object:
 
         file_name = 'dump_' + str(randint(1, 999999999)).zfill(9) + '.json'
-  
+
         with open(file_name, "w") as outfile:
             json.dump(data_object, outfile)
 
@@ -261,7 +272,8 @@ def _write_json_to_stage(conn, data_object, stage):
                 os.remove(file_name)
         except snowflake.connector.errors.ProgrammingError as e:
             print(e)
-            print('Error {0} ({1}): {2} ({3})'.format(e.errno, e.sqlstate, e.msg, e.sfqid))
+            print('Error {0} ({1}): {2} ({3})'.format(e.errno, e.sqlstate,
+                                                      e.msg, e.sfqid))
             if os.path.exists(file_name):
                 os.remove(file_name)
 

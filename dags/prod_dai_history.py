@@ -5,7 +5,7 @@ import os, sys
 sys.path.append('/opt/airflow/')
 
 from dags.connectors.sf import sf
-from dags.utils.history.history import _history
+from dags.utils.history.dai_history import update_dai_history
 
 # [START default_args]
 # These args will get passed on to each operator
@@ -23,20 +23,21 @@ default_args = {
 # [START instantiate_dag]
 @dag(
     default_args=default_args,
-    schedule_interval='0 1 * * *',
-    start_date=datetime(2022, 2, 18, 1),
+    schedule_interval='0 * * * *',
+    start_date=datetime(2022, 3, 22, 10),
     max_active_runs=1,
     catchup=False,
 )
-def prod_history():
+def prod_dai_history():
 
     @task()
-    def history():
+    def update_dai_tx_history():
 
-        _history()
+        update_dai_history(sf)
 
         return
 
-    history()
+    update_dai_tx_history()
 
-prod_history = prod_history()
+
+prod_dai_history = prod_dai_history()
