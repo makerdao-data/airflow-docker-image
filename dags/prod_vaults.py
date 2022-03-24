@@ -27,6 +27,7 @@ from dags.utils.vaults.vault_operations import _vault_operations
 from dags.utils.vaults.vaults import _vaults
 from dags.utils.vaults.debt_calculation import _debt_calculation
 from dags.trackers.vault_updater import update_vault_data
+from dags.utils.vaults.fetch_admins import _fetch_admins
 
 # [START default_args]
 # These args will get passed on to each operator
@@ -95,6 +96,13 @@ def prod_vaults_load():
         manager_operations = _manager_operations(manager, **setup)
 
         return {"manager_operations": manager_operations}
+    
+    @task(multiple_outputs=True)
+    def fetch_admins(task_dependency, setup):
+
+        admins = _fetch_admins(**setup)
+
+        return {"admins": admins}
 
     @task(multiple_outputs=True)
     def opened_vaults(task_dependency, manager, setup):
@@ -172,7 +180,7 @@ def prod_vaults_load():
 
     @task(multiple_outputs=True)
     def vaults(task_dependency, ratios, vault_operations, rates, prices,
-               setup):
+                setup):
 
         public_vaults = _vaults(ratios, vault_operations, rates, prices,
                                 **setup)
@@ -223,6 +231,7 @@ def prod_vaults_load():
     vat_ops = vat_operations(vat, vat['vat'], setup)
     manager = fetch_manager(setup, setup)
     manager_ops = manager_operations(manager, manager['manager'], setup)
+    admin_details = fetch_admins(setup, setup)
     all_vaults = opened_vaults(manager, manager['manager'], setup)
     vault_ops = vault_operations(
         [vat_ops, manager_ops, all_vaults],
@@ -254,7 +263,7 @@ def prod_vaults_load():
     )
     pre = pre_load_check([blocks, vat, manager], blocks['blocks'], vat['vat'],
                          manager['manager'], setup)
-    public = vaults(cohesion, ratios['ratios'], vault_ops['vault_operations'],
+    public = vaults([cohesion, admin_details], ratios['ratios'], vault_ops['vault_operations'],
                     rates['rates'], prices['prices'], setup)
     upload = load(
         [blocks, vat, manager, ratios, rates, prices, vat_ops, cohesion, pre],
