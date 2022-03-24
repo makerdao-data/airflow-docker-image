@@ -37,16 +37,17 @@ def _vaults(mats, vault_operations, rates, prices, **setup):
     admins_dict = dict()
     admins = sf.execute(f"""
         SELECT URN, OWNER, DS_PROXY
-        FROM {setup['db']}.public.admins;
+        FROM {setup['db']}.public.admin;
     """).fetchall()
 
     for urn, owner, ds_proxy in admins:
         
-        admins_dict.setdefault(urn, {})
-        admins_dict[urn] = dict(
-            owner = owner.lower() if owner else None,
-            ds_proxy = ds_proxy.lower() if ds_proxy else None
-        )
+        if urn:
+            admins_dict.setdefault(urn.lower(), {})
+            admins_dict[urn.lower()] = dict(
+                owner = owner.lower() if owner else None,
+                ds_proxy = ds_proxy.lower() if ds_proxy else None
+            )
 
     public_vaults = list()
     for (
@@ -192,8 +193,8 @@ def _vaults(mats, vault_operations, rates, prices, **setup):
                 row[11],
                 mat,
                 row[14],
-                admins_dict[urn]['ds_proxy'],
-                admins_dict[urn]['owner']
+                admins_dict[urn]['ds_proxy'] if urn in admins_dict else None,
+                admins_dict[urn]['owner'] if urn in admins_dict else None
             ]
         )
 
