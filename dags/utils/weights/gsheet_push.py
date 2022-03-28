@@ -25,15 +25,46 @@ def _gsheet_push():
     request = service.spreadsheets().values().get(spreadsheetId=SPREADSHEET_ID, range=range_notation)
     response = request.execute()
 
-    records = sf.execute(f"""
-        select to_varchar(p.eod::date) as eod, d.type as type, case when d.name is null then d.vote_delegate else d.name end as name, p.balance as weight
-        from delegates.public.power p, delegates.public.delegates d
-        where p.vote_delegate = d.vote_delegate and
-            eod > '{response['values'][-1][0]}'
-        order by eod;
-    """
-    ).fetchall()
+    delegates = dict()
+    for vote_delegate, start_date, type, name in sf.execute(f"""
+            SELECT vote_delegate, start_date, type, name
+            FROM delegates.public.delegates;
+        """).fetchall():
 
+        delegates[vote_delegate] = dict(
+            start_date=start_date,
+            type=type,
+            name=name
+        )
+
+    records = list()
+
+    for eod, weight, vote_delegate in sf.execute(f"""
+            SELECT to_varchar(p.eod::date) as eod, p.balance as weight, p.vote_delegate
+            FROM delegates.public.power p
+            WHERE eod > '{response['values'][-1][0]}'
+            ORDER BY eod;
+        """).fetchall():
+
+        type = None
+        name = None
+
+        if vote_delegate in delegates:
+            if delegates[vote_delegate]['start_date']:
+                if delegates[vote_delegate]['start_date'].__str__()[:10] <= eod:
+                    type = delegates[vote_delegate]['type']
+                    name = delegates[vote_delegate]['name']
+            else:
+                type = delegates[vote_delegate]['type']
+                name = vote_delegate
+        
+        records.append([
+            eod,
+            type,
+            name,
+            weight
+        ])
+    
     range_notation = f"{SHEET_NAME}!A2"
 
     body = {

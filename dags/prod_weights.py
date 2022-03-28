@@ -51,6 +51,7 @@ def prod_weights_load():
             load_id = datetime.now().__str__()[:19]
 
             _fetch_vote_delegates(days[0].__str__()[:10], days[-1].__str__()[:10], load_id)
+            _update_delegates()
 
             delegates = sf.execute("""
                 SELECT timestamp, vote_delegate
@@ -96,9 +97,6 @@ def prod_weights_load():
                 VALUES('{load_id}', '{days[0].__str__()[:10]}', '{days[-1].__str__()[:10]}');
             """
             )
-
-        _update_delegates()
-    
 
     workflow()
     

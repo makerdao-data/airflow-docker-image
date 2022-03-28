@@ -1,4 +1,18 @@
 from web3 import Web3
+from dags.connectors.sf import sf
+
+
+def _get_max_block(date):
+
+    q = f"""
+        SELECT MAX(block)
+        FROM EDW_SHARE.RAW.BLOCKS
+        WHERE DATE(timestamp) = '{date}';
+    """
+
+    max_block = sf.execute(q).fetchone()[0]
+
+    return max_block
 
 
 def _get_chief(chain, vote_delegate):

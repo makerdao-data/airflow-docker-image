@@ -7,6 +7,7 @@ from dags.utils.weights.update_delegates import _update_delegates
 
 
 def _fetch_vote_delegates(start_date, end_date, load_id):
+
     vote_delegates = list()
     for vote_delegate in sf.execute("""
         SELECT vote_delegate
@@ -16,20 +17,20 @@ def _fetch_vote_delegates(start_date, end_date, load_id):
 
         vote_delegates.append(vote_delegate[0])
 
-    q = f"""
-        SELECT block_number, FORMAT_TIMESTAMP("%Y-%m-%d %H:%M:%S", block_timestamp, "UTC"), topics, lower(address)
-        FROM `bigquery-public-data.crypto_ethereum.logs`
-        WHERE DATE(block_timestamp) >= "{start_date}"
-        AND DATE(block_timestamp) <= "{end_date}"
-        AND topics[safe_offset(0)] in ("0x2187b96b95fffefab01016c852705bc8ec76d1ea17dd5bffef25fd7136633644")
-        AND lower(address) = lower("0xd897f108670903d1d6070fcf818f9db3615af272") ;
-    """
+    delegates = sf.execute(f"""
+        SELECT block, timestamp, topic1, topic2, contract, tx_hash
+        FROM "EDW_SHARE"."RAW"."EVENTS"
+        WHERE DATE(timestamp) >= "{start_date}"
+        AND DATE(timestamp) <= "{end_date}"
+        AND topic0 = '0x2187b96b95fffefab01016c852705bc8ec76d1ea17dd5bffef25fd7136633644'
+        AND contract = '0xd897f108670903d1d6070fcf818f9db3615af272';
+    """).fetchall()
 
     records = list()
-    for block, timestamp, topics, address in bq_query(q):
+    for block, timestamp, topic1, topic2, address, tx_hash in delegates:
 
-        vote_delegate = topics[2][:2] + topics[2][-40:]
-        delegate = topics[1][:2] + topics[1][-40:]
+        vote_delegate = topic2[:2] + topic2[-40:]
+        delegate = topic1[:2] + topic1[-40:]
 
         if vote_delegate not in vote_delegates:
 
@@ -41,11 +42,12 @@ def _fetch_vote_delegates(start_date, end_date, load_id):
                 vote_delegate,
                 delegate,
                 None,
-                None
+                None,
+                None,
+                tx_hash
             ]
 
             records.append(r)
-
 
     if records:
         pattern = _write_to_stage(
