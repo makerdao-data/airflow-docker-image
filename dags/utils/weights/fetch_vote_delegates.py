@@ -20,8 +20,8 @@ def _fetch_vote_delegates(start_date, end_date, load_id):
     delegates = sf.execute(f"""
         SELECT block, timestamp, topic1, topic2, contract, tx_hash
         FROM "EDW_SHARE"."RAW"."EVENTS"
-        WHERE DATE(timestamp) >= "{start_date}"
-        AND DATE(timestamp) <= "{end_date}"
+        WHERE DATE(timestamp) >= '{start_date}'
+        AND DATE(timestamp) <= '{end_date}'
         AND topic0 = '0x2187b96b95fffefab01016c852705bc8ec76d1ea17dd5bffef25fd7136633644'
         AND contract = '0xd897f108670903d1d6070fcf818f9db3615af272';
     """).fetchall()
