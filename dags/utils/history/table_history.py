@@ -19,7 +19,7 @@ def update_table_history(sf):
         for schema in ['MAKER', 'DELEGATES', 'LIQUIDATIONS', 'MCD']:
             results.append(
                 sf.execute(
-                    f"""SELECT "TABLE_NAME", "LAST_ALTERED" FROM {schema}.INFORMATION_SCHEMA."TABLES" WHERE "TABLE_OWNER" IS NOT NULL"""
+                    f"""SELECT CONCAT("TABLE_CATALOG",'.',"TABLE_SCHEMA",'.',"TABLE_NAME") AS TABLE_NAME, "LAST_ALTERED" FROM {schema}.INFORMATION_SCHEMA."TABLES" WHERE "TABLE_OWNER" IS NOT NULL"""
                 ).fetchall())
     except Exception as e:
         raise AirflowFailException(e)
