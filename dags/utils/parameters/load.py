@@ -331,12 +331,12 @@ def _load(**setup):
             end as parameter,
             maker.public.etl_hextostr(substr(location, 3, 42)) as ilk,
             case substr(location, length(location))
-            when '1' then iff(maker.public.test_hextoint(prev_value) = 0, 0, maker.public.test_hextoint(prev_value) / power(10, 18) -1)
-            when '2' then (maker.public.test_hextoint(prev_value) / power(10, 45))
+            when '1' then iff(maker.public.etl_hextoint(prev_value) = 0, 0, maker.public.etl_hextoint(prev_value) / power(10, 18) -1)
+            when '2' then (maker.public.etl_hextoint(prev_value) / power(10, 45))
             end as from_value,
             case substr(location, length(location))
-            when '1' then iff(maker.public.test_hextoint(curr_value) = 0, 0, maker.public.test_hextoint(curr_value) / power(10, 18) -1)
-            when '2' then (maker.public.test_hextoint(curr_value) / power(10, 45))
+            when '1' then iff(maker.public.etl_hextoint(curr_value) = 0, 0, maker.public.etl_hextoint(curr_value) / power(10, 18) -1)
+            when '2' then (maker.public.etl_hextoint(curr_value) / power(10, 45))
             end as to_value
             from edw_share.raw.storage_diffs
             where contract = lower('0xa5679C04fc3d9d8b0AaB1F0ab83555b301cA70Ea') and
