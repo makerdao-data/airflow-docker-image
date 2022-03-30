@@ -42,13 +42,22 @@ def _load(**setup):
         f"""
 
             insert into maker.public.parameters (
-            with clippers as
+
+            with
+            clippers as
             (select distinct maker.public.etl_hextostr(substr(location, 3, 42)) as ilk, curr_value as address
             from edw_share.raw.storage_diffs
             where contract = '0x135954d155898d42c90d2a57824c690e0c7bef1b' and
             location like '1[%' and
             substr(location, length(location)) = '0' and
-            block > {setup['start_block']} and block <= {setup['end_block']} and status)
+            status),
+            flippers as
+            (select distinct maker.public.etl_hextostr(substr(location, 3, 42)) as ilk, curr_value as address
+            from edw_share.raw.storage_diffs
+            where contract = lower('0xa5679C04fc3d9d8b0AaB1F0ab83555b301cA70Ea') and
+            location like '1[%' and
+            substr(location, length(location)) = '0'and
+            status)
 
             select p.block, p.timestamp, p.tx_hash, t.to_address as source,
             p.parameter, p.ilk, p.from_value, p.to_value from
@@ -64,7 +73,8 @@ def _load(**setup):
             where contract = '0x35d1b3f3d7966a1dfe207aa4514c12a259a0492b' and
             location like '2[%' and
             substr(location, length(location)) in ('3' ,'4') and
-            block > {setup['start_block']} and block <= {setup['end_block']} and status
+            block > {setup['start_block']} and block <= {setup['end_block']} and
+            status
 
             union
 
@@ -81,7 +91,8 @@ def _load(**setup):
             where contract = '0xc7bdd1f2b16447dcf3de045c4a039a60ec2f0ba3' and
             location like '0[%' and
             substr(location, length(location)) in ('0', '1') and
-            block > {setup['start_block']} and block <= {setup['end_block']} and status
+            block > {setup['start_block']} and block <= {setup['end_block']} and
+            status
 
             union
 
@@ -96,7 +107,8 @@ def _load(**setup):
             location like '0[%' and
             substr(location, length(location)) = '2' and
             from_value != to_value and
-            block > {setup['start_block']} and block <= {setup['end_block']} and status
+            block > {setup['start_block']} and block <= {setup['end_block']} and
+            status
 
             union
 
@@ -109,7 +121,8 @@ def _load(**setup):
             from edw_share.raw.storage_diffs
             where contract = '0x65c79fcb50ca1594b025960e539ed7a9a6d434a3' and
             location like '1[%.1' and
-            block > {setup['start_block']} and block <= {setup['end_block']} and status
+            block > {setup['start_block']} and block <= {setup['end_block']} and
+            status
 
             union
 
@@ -124,7 +137,8 @@ def _load(**setup):
             from edw_share.raw.storage_diffs
             where contract = '0x19c0976f590d67707e62397c87829d896dc0f1f1' and
             location like '1[%.0' and
-            block > {setup['start_block']} and block <= {setup['end_block']} and status
+            block > {setup['start_block']} and block <= {setup['end_block']} and
+            status
 
             union
 
@@ -147,7 +161,8 @@ def _load(**setup):
             where contract = '0x135954d155898d42c90d2a57824c690e0c7bef1b' and
             location like '1[%' and
             substr(location, length(location)) in ('1', '2') and
-            block > {setup['start_block']} and block <= {setup['end_block']} and status
+            block > {setup['start_block']} and block <= {setup['end_block']} and
+            status
 
             union
 
@@ -170,7 +185,7 @@ def _load(**setup):
             from edw_share.raw.storage_diffs d, clippers c
             where d.contract = c.address and
             d.location in ('5', '6', '7') and
-            d.block > {setup['start_block']} and block <= {setup['end_block']} and
+            d.block > {setup['start_block']} and d.block <= {setup['end_block']} and
             d.status
 
             union
@@ -185,7 +200,7 @@ def _load(**setup):
             where d.contract = c.address and
             d.location = '8' and
             from_value != to_value and
-            d.block > {setup['start_block']} and block <= {setup['end_block']} and
+            d.block > {setup['start_block']} and d.block <= {setup['end_block']} and
             d.status
 
             union
@@ -200,7 +215,7 @@ def _load(**setup):
             where d.contract = c.address and
             d.location = '8' and
             from_value != to_value and
-            d.block > {setup['start_block']} and block <= {setup['end_block']} and
+            d.block > {setup['start_block']} and d.block <= {setup['end_block']} and
             d.status
 
             union
@@ -219,7 +234,8 @@ def _load(**setup):
             from edw_share.raw.storage_diffs
             where contract = '0xa950524441892a31ebddf91d3ceefa04bf454466' and
             location in ('8', '9', '10', '11') and
-            block > {setup['start_block']} and block <= {setup['end_block']} and status
+            block > {setup['start_block']} and block <= {setup['end_block']} and
+            status
 
             union
 
@@ -232,7 +248,8 @@ def _load(**setup):
             from edw_share.raw.storage_diffs
             where contract = '0xc4269cc7acdedc3794b221aa4d9205f564e27f0d' and
             location = '4' and
-            block > {setup['start_block']} and block <= {setup['end_block']} and status
+            block > {setup['start_block']} and block <= {setup['end_block']} and
+            status
 
             union
 
@@ -246,7 +263,8 @@ def _load(**setup):
             where contract = '0xc4269cc7acdedc3794b221aa4d9205f564e27f0d' and
             location = '5' and
             from_value != to_value and
-            block > {setup['start_block']} and block <= {setup['end_block']} and status
+            block > {setup['start_block']} and block <= {setup['end_block']} and
+            status
 
             union
 
@@ -262,7 +280,8 @@ def _load(**setup):
             from edw_share.raw.storage_diffs
             where contract = '0xa41b6ef151e06da0e34b009b86e828308986736d' and
             location in ('4', '5') and
-            block > {setup['start_block']} and block <= {setup['end_block']} and status
+            block > {setup['start_block']} and block <= {setup['end_block']} and
+            status
 
             union
 
@@ -276,7 +295,8 @@ def _load(**setup):
             where contract = '0xa41b6ef151e06da0e34b009b86e828308986736d' and
             location = '6' and
             from_value != to_value and
-            block > {setup['start_block']} and block <= {setup['end_block']} and status
+            block > {setup['start_block']} and block <= {setup['end_block']} and
+            status
 
             union
 
@@ -298,8 +318,70 @@ def _load(**setup):
             from edw_share.raw.storage_diffs
             where contract = '0xa13c0c8eb109f5a13c6c90fc26afb23beb3fb04a' and
             from_value != to_value and
+            location in ('1', '2') and
             block > {setup['start_block']} and block <= {setup['end_block']} and
-            location in ('1', '2') and status
+            status
+
+            union
+
+            select block, timestamp, tx_hash, order_index,
+            case substr(location, length(location))
+            when '1' then 'CAT.ilks.chop'
+            when '2' then 'CAT.ilks.dunk'
+            end as parameter,
+            maker.public.etl_hextostr(substr(location, 3, 42)) as ilk,
+            case substr(location, length(location))
+            when '1' then iff(maker.public.test_hextoint(prev_value) = 0, 0, maker.public.test_hextoint(prev_value) / power(10, 18) -1)
+            when '2' then (maker.public.test_hextoint(prev_value) / power(10, 45))
+            end as from_value,
+            case substr(location, length(location))
+            when '1' then iff(maker.public.test_hextoint(curr_value) = 0, 0, maker.public.test_hextoint(curr_value) / power(10, 18) -1)
+            when '2' then (maker.public.test_hextoint(curr_value) / power(10, 45))
+            end as to_value
+            from edw_share.raw.storage_diffs
+            where contract = lower('0xa5679C04fc3d9d8b0AaB1F0ab83555b301cA70Ea') and
+            location like '1[%' and
+            from_value != to_value and
+            block > {setup['start_block']} and block <= {setup['end_block']} and
+            status
+
+            union
+
+            select sd.block, sd.timestamp, sd.tx_hash, sd.order_index,
+            'FLIPPER.tau' as parameter,
+            f.ilk,
+            maker.public.etl_hextoint(substr(sd.prev_value, 0, 8)) as from_value,
+            maker.public.etl_hextoint(substr(sd.curr_value, 0, 8)) as to_value
+            from edw_share.raw.storage_diffs sd, flippers f
+            where sd.contract = f.address and
+            sd.status and
+            sd.location = '5' and
+            from_value != to_value and
+            sd.block > {setup['start_block']} and sd.block <= {setup['end_block']}
+            union
+            select sd.block, sd.timestamp, sd.tx_hash, sd.order_index,
+            'FLIPPER.ttl' as parameter,
+            f.ilk,
+            maker.public.etl_hextoint(substr(sd.prev_value, 8)) as from_value,
+            maker.public.etl_hextoint(concat('0x', substr(sd.curr_value, 8))) as to_value
+            from edw_share.raw.storage_diffs sd, flippers f
+            where sd.contract = f.address and
+            sd.status and
+            sd.location = '5' and
+            from_value != to_value and
+            sd.block > {setup['start_block']} and sd.block <= {setup['end_block']}
+            union
+            select sd.block, sd.timestamp, sd.tx_hash, sd.order_index,
+            'FLIPPER.beg' as parameter,
+            f.ilk,
+            iff(maker.public.etl_hextoint(sd.prev_value) = 0, 0, maker.public.etl_hextoint(sd.prev_value) / power(10, 18) -1) as from_value,
+            iff(maker.public.etl_hextoint(sd.curr_value) = 0, 0, maker.public.etl_hextoint(sd.curr_value) / power(10, 18) -1) as to_value
+            from edw_share.raw.storage_diffs sd, flippers f
+            where sd.contract = f.address and
+            sd.status and
+            sd.location = '4' and
+            from_value != to_value and
+            sd.block > {setup['start_block']} and sd.block <= {setup['end_block']}
 
             ) p join edw_share.raw.transactions t on p.tx_hash = t.tx_hash
             order by block desc, order_index desc);
