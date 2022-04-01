@@ -244,7 +244,7 @@ def _load(**setup):
             'FLAPPER.beg' as parameter,
             null as ilk,
             iff(maker.public.etl_hextoint(prev_value) = 0, 0, maker.public.etl_hextoint(prev_value) / pow(10, 18) - 1) as from_value,
-            iff(maker.public.etl_hextoint(curr_value) = 0, 0, maker.public.etl_hextoint(curr_value) / pow(10, 18) - 1) as to_value,
+            iff(maker.public.etl_hextoint(curr_value) = 0, 0, maker.public.etl_hextoint(curr_value) / pow(10, 18) - 1) as to_value
             from edw_share.raw.storage_diffs
             where contract = '0xc4269cc7acdedc3794b221aa4d9205f564e27f0d' and
             location = '4' and
@@ -276,7 +276,7 @@ def _load(**setup):
             end as parameter,
             null as ilk,
             iff(maker.public.etl_hextoint(prev_value) = 0, 0, maker.public.etl_hextoint(prev_value) / power(10, 18) -1) as from_value,
-            iff(maker.public.etl_hextoint(curr_value) = 0, 0, maker.public.etl_hextoint(curr_value) / power(10, 18) -1) as to_value,
+            iff(maker.public.etl_hextoint(curr_value) = 0, 0, maker.public.etl_hextoint(curr_value) / power(10, 18) -1) as to_value
             from edw_share.raw.storage_diffs
             where contract = '0xa41b6ef151e06da0e34b009b86e828308986736d' and
             location in ('4', '5') and
