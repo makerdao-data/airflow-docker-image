@@ -60,8 +60,7 @@ def _debt_calculation(**setup):
     ).fetchone()[0]
 
     # Output current debts on-chain vs in-db.
-    print(f"""in-db debt : {round(db_debt, 7)}""")
-    print(f"""on-chain debt : {round(d, 7)}""")
+    print(f"""in-db debt : {round(db_debt, 7)}\non-chain debt : {round(d, 7)}""")
     
     # Raise airflow exception if difference between debts exceeds |0.1|.
     # Otherwise, they are assumed to be quasi-equivalent, therefor correct.
