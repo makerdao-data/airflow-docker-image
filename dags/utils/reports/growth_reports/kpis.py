@@ -19,12 +19,12 @@ def _conduct_analyses(sf: SnowflakeCursor) -> Tuple[pd.DataFrame]:
     Conduct growth report analyses
     """
 
-    # Fetching data then renaming columns
+    # Fetching data then renaming columns and stripping datetime
     today = date.today()
     try:
         hist_vaults = pd.DataFrame(
             sf.execute(
-                f"""SELECT PRINCIPAL, AVAILABLE_DEBT, VAULT, ILK, OSM_PRICE, COLLATERAL, LAST_TIME AS DATE FROM MCD.PUBLIC.CURRENT_VAULTS WHERE LAST_TIME > '{date(today.year, today.month, 1).strftime("%m/%d/%Y %H:%M:%S")}'"""
+                f"""SELECT PRINCIPAL, AVAILABLE_DEBT, VAULT, ILK, OSM_PRICE, COLLATERAL, LAST_TIME AS DATE FROM MCD.PUBLIC.CURRENT_VAULTS WHERE LAST_TIME > '{date(today.year, today.month, 1).strftime("%m/%d/%Y")}'"""
             ).fetchall())
     except:
         raise AirflowFailException("Growth Report data sourcing query failed.")
@@ -32,6 +32,7 @@ def _conduct_analyses(sf: SnowflakeCursor) -> Tuple[pd.DataFrame]:
     for key in list(hist_vaults.keys()):
         renamed_columns[key] = sf.description[key].name
     hist_vaults.rename(columns=renamed_columns, inplace=True)
+    hist_vaults['DATE'] = hist_vaults.loc[:, 'DATE'].dt.date
 
     # Analysis 1 (Dai distribution & available debt)
     df = hist_vaults[hist_vaults['PRINCIPAL'] > 10]
@@ -88,8 +89,6 @@ def _upload(dfs: Tuple[pd.DataFrame], gsheet: Spreadsheet) -> None:
         last_date = dates[-1].split(' ')[0]
         today = date.today()
         ymd_last_date = list(map(int, last_date.split('-')))
-        # Set new_idx as new upload index
-        new_idx = len(dates) + 1
 
         # Check sheet for update location, or if current update is to be skipped
         if today.month == ymd_last_date[1]:
@@ -98,7 +97,7 @@ def _upload(dfs: Tuple[pd.DataFrame], gsheet: Spreadsheet) -> None:
                 try:
                     set_with_dataframe(upload[1],
                                        upload[0],
-                                       row=new_idx,
+                                       row=(dates.index(dates[-1]) + 1),
                                        include_column_header=False)
                 except:
                     raise AirflowFailException(
@@ -114,7 +113,7 @@ def _upload(dfs: Tuple[pd.DataFrame], gsheet: Spreadsheet) -> None:
             try:
                 set_with_dataframe(upload[1],
                                    upload[0],
-                                   row=new_idx,
+                                   row=(len(dates) + 1),
                                    include_column_header=False)
             except:
                 raise AirflowFailException(
