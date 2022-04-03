@@ -92,7 +92,7 @@ def _upload(dfs: Tuple[pd.DataFrame], gsheet: Spreadsheet) -> None:
         # Set new_idx as new upload index
         new_idx = len(dates) + 1
 
-        # Sheet Update Conditionals
+        # Check sheet for update location, or if current update is to be skipped
         if today.month == ymd_last_date[1]:
             if today.day > ymd_last_date[2]:
                 # Update insertion
