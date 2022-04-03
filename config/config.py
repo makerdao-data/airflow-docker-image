@@ -16,6 +16,9 @@ import os
 BQ_PROJECT = 'mcd-265409'
 BQ_CREDENTIALS = os.environ.get('GOOGLE_APPLICATION_CREDENTIALS')
 
+# Google Sheets/Drive Service Account
+SERV_ACCOUNT = os.environ.get('SERV_ACCOUNT')
+
 # Snowflake connection
 SNOWFLAKE_CONNECTION = dict(
     account=os.environ.get('SNOWFLAKE_ACCOUNT'),

@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from airflow.decorators import dag, task
-import os, sys
+import sys
 
 sys.path.append('/opt/airflow/')
 
