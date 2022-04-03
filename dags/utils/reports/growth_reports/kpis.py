@@ -11,6 +11,7 @@ import pandas as pd
 from gspread.client import Client
 from gspread.spreadsheet import Spreadsheet
 from gspread_dataframe import set_with_dataframe
+from airflow.exceptions import AirflowFailException
 from snowflake.connector.cursor import SnowflakeCursor
 
 
