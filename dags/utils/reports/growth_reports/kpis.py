@@ -1,3 +1,8 @@
+"""
+Automating Growth KPIs google sheets report.
+(Peculiar formatting is due to YAPF configuration)
+"""
+
 import calendar
 import sys
 from datetime import date
