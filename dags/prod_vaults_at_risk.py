@@ -43,7 +43,7 @@ def prod_vaults_at_risk():
         return dict(
             start_block=start_block,
             last_scanned_block=last_scanned_block,
-            latest_timestamp=latest_timestamp
+            latest_timestamp=latest_timestamp.__str__()[:19]
         )
 
     @task()
@@ -90,7 +90,7 @@ def prod_vaults_at_risk():
     m = mats(setup, setup)
     pips = pips(setup, setup)
     prices = prices(pips, setup)
-    proc([setup, u, r, m, pips, prices], setup)
+    proc = proc([setup, u, r, m, pips, prices], setup)
     outro(proc, setup)
 
 prod_vaults_at_risk = prod_vaults_at_risk()

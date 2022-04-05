@@ -50,7 +50,7 @@ def _proc(sf, end_block, end_timestamp):
 
     output = dict(
         last_scanned_block = end_block,
-        latest_timestamp = end_timestamp.__str__()[:19],
+        latest_timestamp = end_timestamp,
         vaults_at_risk = vaults_at_risk
     )
 
