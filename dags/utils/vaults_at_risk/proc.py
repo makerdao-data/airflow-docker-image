@@ -23,7 +23,9 @@ def _proc(sf, end_block, end_timestamp):
             ILK = urns['urns'][urn]['hex_ilk']
             debt = urns['urns'][urn]['art'] * rates['rates'][ILK]
 
-            if ILK == '0x5341490000000000000000000000000000000000000000000000000000000000':
+            # if there's no pip for collateral,
+            # there's strong assumption that thic collateral is a stablecoin
+            if ILK not in prices['prices']:
                 current_price = 1
                 next_price = 1
             else:
