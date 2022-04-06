@@ -59,13 +59,13 @@ def _debt_calculation(**setup):
     """
     ).fetchone()[0]
 
-    from_chain = round(d, 2)
-    from_db = round(db_debt, 2)
-    print(f"""chain : {from_chain}""")
-    print(f"""db : {from_db}""")
-    test = from_chain == from_db
-    if not test:
-
+    # Output current debts on-chain vs in-db.
+    print(f"""in-db debt : {round(db_debt, 7)}\non-chain debt : {round(d, 7)}""")
+    
+    # Raise airflow exception if difference between debts exceeds |0.1|.
+    # Otherwise, they are assumed to be quasi-equivalent, therefor correct.
+    calc = db_debt - d
+    if not (-.1 < calc < 0.1):
         raise AirflowFailException(f'WARNING: DEBT IS NOT CORRECT')
     
     try:
