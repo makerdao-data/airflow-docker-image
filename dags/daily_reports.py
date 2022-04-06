@@ -2,8 +2,9 @@ import sys
 from datetime import datetime, timedelta
 
 from airflow.decorators import dag, task
+from dags.connectors.gsheets import gclient
 from dags.connectors.sf import sf
-from dags.utils.history.dai_history import update_dai_history
+from dags.utils.reports.growth_reports.kpis import growth_report_updater
 
 sys.path.append('/opt/airflow/')
 
@@ -12,7 +13,7 @@ sys.path.append('/opt/airflow/')
 # You can override them on a per-task basis during operator initialization
 default_args = {
     "owner": "airflow",
-    "email": ["piotr.m.klis@gmail.com", "airflow@data.makerdao.network"],
+    "email": "airflow@data.makerdao.network",
     "email_on_failure": True,
     "retries": 0,
     "retry_delay": timedelta(minutes=1),
@@ -23,21 +24,21 @@ default_args = {
 # [START instantiate_dag]
 @dag(
     default_args=default_args,
-    schedule_interval='0 * * * *',
-    start_date=datetime(2022, 3, 22, 10),
+    schedule_interval='0 0 * * *',
+    start_date=datetime(2022, 4, 4),
     max_active_runs=1,
     catchup=False,
 )
-def prod_dai_history():
+def daily_reports():
 
     @task()
-    def update_dai_tx_history():
+    def update_growth_report():
 
-        update_dai_history(sf)
+        growth_report_updater(sf, gclient)
 
         return
 
-    update_dai_tx_history()
+    update_growth_report()
 
 
-prod_dai_history = prod_dai_history()
+daily_reports = daily_reports()

@@ -1,7 +1,9 @@
 from web3 import Web3
 from airflow.exceptions import AirflowFailException
-import os, sys
+import sys
+
 sys.path.append('/opt/airflow/')
+
 from dags.connectors.sf import sf
 from dags.connectors.chain import chain
 
@@ -32,7 +34,7 @@ def _debt_calculation(**setup):
         name = ilk[0]
         ilk = ilk[0]
 
-        
+
         ilk_encoded = '0x' + bytes(ilk, 'utf-8').hex()
         ilk = ilk_encoded.ljust(44, '0')
 
@@ -61,23 +63,23 @@ def _debt_calculation(**setup):
 
     # Output current debts on-chain vs in-db.
     print(f"""in-db debt : {round(db_debt, 7)}\non-chain debt : {round(d, 7)}""")
-    
+
     # Raise airflow exception if difference between debts exceeds |0.1|.
     # Otherwise, they are assumed to be quasi-equivalent, therefor correct.
     calc = db_debt - d
     if not (-.1 < calc < 0.1):
-        raise AirflowFailException(f'WARNING: DEBT IS NOT CORRECT')
-    
+        raise AirflowFailException("WARNING: DEBT IS NOT CORRECT")
+
     try:
         sin = mcd_vat.functions.sin(
             Web3.toChecksumAddress("0xA950524441892A31ebddF91d3cEEFa04Bf454466")
         ).call(block_identifier=max_block)
 
         sin = sin / 10**45
-        
+
     except:
         sin = 0
-    
+
     sf.execute(f"""
         INSERT INTO {setup['db']}.internal.vow(timestamp, sin)
         VALUES('{setup['end_time']}', {sin});
