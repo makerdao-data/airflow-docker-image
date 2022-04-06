@@ -4,14 +4,14 @@ import json
 def _proc(sf, end_block, end_timestamp):
 
     data = sf.execute("""
-        SELECT URN, MAT, PRICE, RATE, LAST_SCANNED_BLOCK
+        SELECT URN, MAT, PRICE, RATE
         FROM MAKER.RISK.VAULTS
         WHERE ID = 1;
     """).fetchall()
 
     vaults_at_risk = list()
 
-    for urns, mats, prices, rates, last_scanned_block in data:
+    for urns, mats, prices, rates in data:
 
         urns = json.loads(urns)
         mats = json.loads(mats)
@@ -35,7 +35,7 @@ def _proc(sf, end_block, end_timestamp):
                 next_collateralization = ((urns['urns'][urn]['ink'] * next_price) / debt) * 100
                 mat = mats['mats'][ILK]
                 is_at_risk = next_collateralization <= mat
-                if is_at_risk:
+                if is_at_risk and urns['urns'][urn]['ilk'][:4] != 'RWA0':
                     
                     vaults_at_risk.append(
                         dict(
@@ -46,7 +46,9 @@ def _proc(sf, end_block, end_timestamp):
                             next_collateralization = next_collateralization,
                             current_price = current_price,
                             next_price = next_price,
-                            liquidation_ratio = mat
+                            liquidation_ratio = mat,
+                            hex_ilk = ILK,
+                            ilk = urns['urns'][urn]['ilk']
                         )
                     )
 

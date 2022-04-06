@@ -38,7 +38,7 @@ def _fetch_prices(sf, start_block, end_block):
             WHEN '3' THEN 'curr'
             WHEN '4' THEN 'nxt'
             END asset,
-            maker.public.etl_hextoint(concat('0x', substr(curr_value, 18))) / power(10,18) as value
+            maker.public.etl_hextoint(concat('0x', substr(curr_value, 5))) / power(10,18) as value
             FROM edw_share.raw.storage_diffs
             WHERE lower(contract) = lower('{pips['pips'][hex_ilk]}') AND
             location IN ('3', '4') AND
