@@ -438,6 +438,7 @@ COPY ./dags/. "${AIRFLOW_HOME}"/dags/
 COPY ./config/config.py "${AIRFLOW_HOME}"/config/
 COPY ./config/mcd-265409-7bbf3d7082b4.json "${AIRFLOW_HOME}"/config/
 COPY ./config/quickstart-1587209627813-93a59c68f68e.json "${AIRFLOW_HOME}"/config/
+COPY ./config/serv_account.json "${AIRFLOW_HOME}"/config/
 
 COPY --chown=airflow:root --from=airflow-build-image /root/.local "${AIRFLOW_USER_HOME_DIR}/.local"
 COPY --chown=airflow:root scripts/in_container/prod/entrypoint_prod.sh /entrypoint

@@ -1,12 +1,14 @@
 import sys
 from datetime import datetime, timedelta
-
 from airflow.decorators import dag, task
+
+sys.path.append('/opt/airflow/')
+
 from dags.connectors.gsheets import gclient
 from dags.connectors.sf import sf
 from dags.utils.reports.growth_reports.kpis import growth_report_updater
 
-sys.path.append('/opt/airflow/')
+
 
 # [START default_args]
 # These args will get passed on to each operator

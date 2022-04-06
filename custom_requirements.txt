@@ -159,3 +159,5 @@ mailjet_rest
 beautifulsoup4==4.10.0
 plotly==4.12.0
 snowflake-connector-python[pandas]
+gspread
+gspread_dataframe
