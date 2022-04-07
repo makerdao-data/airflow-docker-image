@@ -113,11 +113,13 @@ def _upload(dfs: Tuple[pd.DataFrame], gsheet: Spreadsheet) -> None:
         if '-' in dates[-1]:
             last_date = dates[-1].split(' ')[0]
             ymd_last_date = list(map(int, last_date.split('-')))
+            idx = (dates.index(dates[-1]) + 1)
         else:
             last_date = datetime.strptime(dates[-1], '%m/%d/%Y')
             upload[0] = upload[0][upload[0]['Timestamp'] > last_date]
             upload[0]['Timestamp'] = upload[0]['Timestamp'].apply(lambda x: x.strftime('%m/%d/%Y'))
             ymd_last_date = [last_date.year, last_date.month, last_date.day]
+            idx = (len(dates) + 1)
 
         # Get current date
         today = date.today()
@@ -129,7 +131,7 @@ def _upload(dfs: Tuple[pd.DataFrame], gsheet: Spreadsheet) -> None:
                 try:
                     set_with_dataframe(upload[1],
                                        upload[0],
-                                       row=(dates.index(dates[-1]) + 1),
+                                       row=idx,
                                        include_column_header=False)
                 except:
                     raise AirflowFailException(
