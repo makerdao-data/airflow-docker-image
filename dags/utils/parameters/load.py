@@ -45,12 +45,16 @@ def _load(**setup):
 
             with
             clippers as
-            (select distinct maker.public.etl_hextostr(substr(location, 3, 42)) as ilk, curr_value as address
-            from edw_share.raw.storage_diffs
-            where contract = '0x135954d155898d42c90d2a57824c690e0c7bef1b' and
-            location like '1[%' and
-            substr(location, length(location)) = '0' and
-            status),
+            (select distinct maker.public.etl_hextostr(substr(sd.location, 3, 42)) as ilk,
+            sd.curr_value as address,
+            sd.tx_hash,
+            txs.to_address as DssSpell
+            from edw_share.raw.storage_diffs sd, edw_share.raw.transactions txs
+            where sd.tx_hash = txs.tx_hash and
+            sd.contract = '0x135954d155898d42c90d2a57824c690e0c7bef1b' and
+            sd.location like '1[%' and
+            substr(sd.location, length(sd.location)) = '0' and
+            sd.status),
             flippers as
             (select distinct maker.public.etl_hextostr(substr(location, 3, 42)) as ilk, curr_value as address
             from edw_share.raw.storage_diffs
@@ -59,7 +63,11 @@ def _load(**setup):
             substr(location, length(location)) = '0'and
             status)
 
-            select p.block, p.timestamp, p.tx_hash, t.to_address as source,
+            select p.block, p.timestamp, p.tx_hash,
+            case
+            when t.to_address is null then p.DssSpell
+            else t.to_address
+            end as source,
             p.parameter, p.ilk, p.from_value, p.to_value from
             (
 
