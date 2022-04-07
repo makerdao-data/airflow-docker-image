@@ -76,7 +76,8 @@ def _load(**setup):
             iff(substr(location, length(location)) = '3', 'VAT.ilks.line', 'VAT.ilks.dust') as parameter,
             maker.public.etl_hextostr(substr(location, 3, 42)) as ilk,
             maker.public.etl_hextoint(prev_value) / pow(10, 45) as from_value,
-            maker.public.etl_hextoint(curr_value) / pow(10, 45) as to_value
+            maker.public.etl_hextoint(curr_value) / pow(10, 45) as to_value,
+            'DssSpell' as DssSpell
             from edw_share.raw.storage_diffs
             where contract = '0x35d1b3f3d7966a1dfe207aa4514c12a259a0492b' and
             location like '2[%' and
@@ -94,7 +95,8 @@ def _load(**setup):
             end as parameter,
             maker.public.etl_hextostr(substr(location, 3, 42)) as ilk,
             maker.public.etl_hextoint(prev_value) / pow(10, 45) as from_value,
-            maker.public.etl_hextoint(curr_value) / pow(10, 45) as to_value
+            maker.public.etl_hextoint(curr_value) / pow(10, 45) as to_value,
+            'DssSpell' as DssSpell
             from edw_share.raw.storage_diffs
             where contract = '0xc7bdd1f2b16447dcf3de045c4a039a60ec2f0ba3' and
             location like '0[%' and
@@ -109,7 +111,8 @@ def _load(**setup):
             'DC-IAM.ilks.ttl'as parameter,
             maker.public.etl_hextostr(substr(location, 3, 42)) as ilk,
             maker.public.etl_hextoint(right(prev_value, 12)) as from_value,
-            maker.public.etl_hextoint(right(curr_value, 12)) as to_value
+            maker.public.etl_hextoint(right(curr_value, 12)) as to_value,
+            'DssSpell' as DssSpell
             from edw_share.raw.storage_diffs
             where contract = '0xc7bdd1f2b16447dcf3de045c4a039a60ec2f0ba3' and
             location like '0[%' and
@@ -125,7 +128,8 @@ def _load(**setup):
             'SPOTTER.ilks.mat' as parameter,
             maker.public.etl_hextostr(substr(location, 3, 42)) as ilk,
             maker.public.etl_hextoint(prev_value) / pow(10, 27) as from_value,
-            maker.public.etl_hextoint(curr_value) / pow(10, 27) as to_value
+            maker.public.etl_hextoint(curr_value) / pow(10, 27) as to_value,
+            'DssSpell' as DssSpell
             from edw_share.raw.storage_diffs
             where contract = '0x65c79fcb50ca1594b025960e539ed7a9a6d434a3' and
             location like '1[%.1' and
@@ -141,7 +145,8 @@ def _load(**setup):
             iff(maker.public.etl_hextoint(prev_value) > 0, round(pow(maker.public.etl_hextoint(prev_value) / pow(10, 27), 606024365), 4) - 1, 0)
             as from_value,
             iff(maker.public.etl_hextoint(curr_value) > 0, round(pow(maker.public.etl_hextoint(curr_value) / pow(10, 27), 606024365), 4) - 1, 0)
-            as to_value
+            as to_value,
+            'DssSpell' as DssSpell
             from edw_share.raw.storage_diffs
             where contract = '0x19c0976f590d67707e62397c87829d896dc0f1f1' and
             location like '1[%.0' and
@@ -164,7 +169,8 @@ def _load(**setup):
             case substr(location, length(location))
             when '1' then iff(maker.public.etl_hextoint(curr_value) = 0, 0, maker.public.etl_hextoint(curr_value) / pow(10, 18) - 1)
             else maker.public.etl_hextoint(curr_value) / pow(10, 45)
-            end as to_value
+            end as to_value,
+            'DssSpell' as DssSpell
             from edw_share.raw.storage_diffs
             where contract = '0x135954d155898d42c90d2a57824c690e0c7bef1b' and
             location like '1[%' and
@@ -175,21 +181,22 @@ def _load(**setup):
             union
 
             // CLIPPERs parameters (buf, tail, cusp)
-            select d.block, timestamp, tx_hash, order_index,
-            case substr(location, length(location))
+            select d.block, d.timestamp, d.tx_hash, d.order_index,
+            case substr(d.location, length(d.location))
             when '5' then 'CLIPPER.buf'
             when '6' then 'CLIPPER.tail'
             when '7' then 'CLIPPER.cusp'
             end as parameter,
             c.ilk,
-            case substr(location, length(location))
-            when '6' then maker.public.etl_hextoint(prev_value)
-            else maker.public.etl_hextoint(prev_value) / pow(10, 27)
+            case substr(d.location, length(d.location))
+            when '6' then maker.public.etl_hextoint(d.prev_value)
+            else maker.public.etl_hextoint(d.prev_value) / pow(10, 27)
             end as from_value,
-            case substr(location, length(location))
-            when '6' then maker.public.etl_hextoint(curr_value)
-            else maker.public.etl_hextoint(curr_value) / pow(10, 27)
-            end as to_value
+            case substr(d.location, length(d.location))
+            when '6' then maker.public.etl_hextoint(d.curr_value)
+            else maker.public.etl_hextoint(d.curr_value) / pow(10, 27)
+            end as to_value,
+            c.DssSpell
             from edw_share.raw.storage_diffs d, clippers c
             where d.contract = c.address and
             d.location in ('5', '6', '7') and
@@ -199,11 +206,12 @@ def _load(**setup):
             union
 
             // CLIPPERs parameters (chip)
-            select d.block, timestamp, tx_hash, order_index,
+            select d.block, d.timestamp, d.tx_hash, d.order_index,
             'CLIPPER.chip' as parameter,
             c.ilk,
-            maker.public.etl_hextoint(right(prev_value, 16)) / pow(10, 18) as from_value,
-            maker.public.etl_hextoint(right(curr_value, 16)) / pow(10, 18) as to_value
+            maker.public.etl_hextoint(right(d.prev_value, 16)) / pow(10, 18) as from_value,
+            maker.public.etl_hextoint(right(d.curr_value, 16)) / pow(10, 18) as to_value,
+            'DssSpell' as DssSpell
             from edw_share.raw.storage_diffs d, clippers c
             where d.contract = c.address and
             d.location = '8' and
@@ -214,11 +222,12 @@ def _load(**setup):
             union
 
             // CLIPPERs parameters (tip)
-            select d.block, timestamp, tx_hash, order_index,
+            select d.block, d.timestamp, d.tx_hash, d.order_index,
             'CLIPPER.tip' as parameter,
             c.ilk,
-            maker.public.etl_hextoint(substr(prev_value, 1, len(prev_value)-16)) / pow(10, 45) as from_value,
-            maker.public.etl_hextoint(substr(curr_value, 1, len(curr_value)-16)) / pow(10, 45) as to_value
+            maker.public.etl_hextoint(substr(d.prev_value, 1, len(d.prev_value)-16)) / pow(10, 45) as from_value,
+            maker.public.etl_hextoint(substr(d.curr_value, 1, len(d.curr_value)-16)) / pow(10, 45) as to_value,
+            'DssSpell' as DssSpell
             from edw_share.raw.storage_diffs d, clippers c
             where d.contract = c.address and
             d.location = '8' and
@@ -238,7 +247,8 @@ def _load(**setup):
             end as parameter,
             null as ilk,
             maker.public.etl_hextoint(prev_value) / pow(10, 45) as from_value,
-            maker.public.etl_hextoint(curr_value) / pow(10, 45) as to_value
+            maker.public.etl_hextoint(curr_value) / pow(10, 45) as to_value,
+            'DssSpell' as DssSpell
             from edw_share.raw.storage_diffs
             where contract = '0xa950524441892a31ebddf91d3ceefa04bf454466' and
             location in ('8', '9', '10', '11') and
@@ -252,7 +262,8 @@ def _load(**setup):
             'FLAPPER.beg' as parameter,
             null as ilk,
             iff(maker.public.etl_hextoint(prev_value) = 0, 0, maker.public.etl_hextoint(prev_value) / pow(10, 18) - 1) as from_value,
-            iff(maker.public.etl_hextoint(curr_value) = 0, 0, maker.public.etl_hextoint(curr_value) / pow(10, 18) - 1) as to_value
+            iff(maker.public.etl_hextoint(curr_value) = 0, 0, maker.public.etl_hextoint(curr_value) / pow(10, 18) - 1) as to_value,
+            'DssSpell' as DssSpell
             from edw_share.raw.storage_diffs
             where contract = '0xc4269cc7acdedc3794b221aa4d9205f564e27f0d' and
             location = '4' and
@@ -266,7 +277,8 @@ def _load(**setup):
             'FLAPPER.ttl' as parameter,
             null as ilk,
             maker.public.etl_hextoint(right(prev_value, 12)) as from_value,
-            maker.public.etl_hextoint(right(curr_value, 12)) as to_value
+            maker.public.etl_hextoint(right(curr_value, 12)) as to_value,
+            'DssSpell' as DssSpell
             from edw_share.raw.storage_diffs
             where contract = '0xc4269cc7acdedc3794b221aa4d9205f564e27f0d' and
             location = '5' and
@@ -284,7 +296,8 @@ def _load(**setup):
             end as parameter,
             null as ilk,
             iff(maker.public.etl_hextoint(prev_value) = 0, 0, maker.public.etl_hextoint(prev_value) / power(10, 18) -1) as from_value,
-            iff(maker.public.etl_hextoint(curr_value) = 0, 0, maker.public.etl_hextoint(curr_value) / power(10, 18) -1) as to_value
+            iff(maker.public.etl_hextoint(curr_value) = 0, 0, maker.public.etl_hextoint(curr_value) / power(10, 18) -1) as to_value,
+            'DssSpell' as DssSpell
             from edw_share.raw.storage_diffs
             where contract = '0xa41b6ef151e06da0e34b009b86e828308986736d' and
             location in ('4', '5') and
@@ -298,7 +311,8 @@ def _load(**setup):
             'FLOPPER.ttl' as parameter,
             null as ilk,
             maker.public.etl_hextoint(right(prev_value, 12)) as from_value,
-            maker.public.etl_hextoint(right(curr_value, 12)) as to_value
+            maker.public.etl_hextoint(right(curr_value, 12)) as to_value,
+            'DssSpell' as DssSpell
             from edw_share.raw.storage_diffs
             where contract = '0xa41b6ef151e06da0e34b009b86e828308986736d' and
             location = '6' and
@@ -322,7 +336,8 @@ def _load(**setup):
             case location
             when '2' then maker.public.etl_hextoint(curr_value) / pow(10,27)
             else maker.public.etl_hextoint(curr_value)
-            end as to_value
+            end as to_value,
+            'DssSpell' as DssSpell
             from edw_share.raw.storage_diffs
             where contract = '0xa13c0c8eb109f5a13c6c90fc26afb23beb3fb04a' and
             from_value != to_value and
@@ -345,7 +360,8 @@ def _load(**setup):
             case substr(location, length(location))
             when '1' then iff(maker.public.etl_hextoint(curr_value) = 0, 0, maker.public.etl_hextoint(curr_value) / power(10, 18) -1)
             when '2' then (maker.public.etl_hextoint(curr_value) / power(10, 45))
-            end as to_value
+            end as to_value,
+            'DssSpell' as DssSpell
             from edw_share.raw.storage_diffs
             where contract = lower('0xa5679C04fc3d9d8b0AaB1F0ab83555b301cA70Ea') and
             location like '1[%' and
@@ -359,7 +375,8 @@ def _load(**setup):
             'FLIPPER.tau' as parameter,
             f.ilk,
             maker.public.etl_hextoint(substr(sd.prev_value, 0, 8)) as from_value,
-            maker.public.etl_hextoint(substr(sd.curr_value, 0, 8)) as to_value
+            maker.public.etl_hextoint(substr(sd.curr_value, 0, 8)) as to_value,
+            'DssSpell' as DssSpell
             from edw_share.raw.storage_diffs sd, flippers f
             where sd.contract = f.address and
             sd.status and
@@ -371,7 +388,8 @@ def _load(**setup):
             'FLIPPER.ttl' as parameter,
             f.ilk,
             maker.public.etl_hextoint(substr(sd.prev_value, 8)) as from_value,
-            maker.public.etl_hextoint(concat('0x', substr(sd.curr_value, 8))) as to_value
+            maker.public.etl_hextoint(concat('0x', substr(sd.curr_value, 8))) as to_value,
+            'DssSpell' as DssSpell
             from edw_share.raw.storage_diffs sd, flippers f
             where sd.contract = f.address and
             sd.status and
@@ -383,7 +401,8 @@ def _load(**setup):
             'FLIPPER.beg' as parameter,
             f.ilk,
             iff(maker.public.etl_hextoint(sd.prev_value) = 0, 0, maker.public.etl_hextoint(sd.prev_value) / power(10, 18) -1) as from_value,
-            iff(maker.public.etl_hextoint(sd.curr_value) = 0, 0, maker.public.etl_hextoint(sd.curr_value) / power(10, 18) -1) as to_value
+            iff(maker.public.etl_hextoint(sd.curr_value) = 0, 0, maker.public.etl_hextoint(sd.curr_value) / power(10, 18) -1) as to_value,
+            'DssSpell' as DssSpell
             from edw_share.raw.storage_diffs sd, flippers f
             where sd.contract = f.address and
             sd.status and
