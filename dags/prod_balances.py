@@ -34,14 +34,14 @@ def prod_bals():
     @task()
     def update_dai_balances():
 
-        update_token_balances('DAI', conn)
+        update_token_balances('DAI', 10**-18, conn)
 
         return
 
     @task()
     def update_mkr_balances():
 
-        update_token_balances('MKR', conn)
+        update_token_balances('MKR', 10**-18, conn)
 
         return
 
