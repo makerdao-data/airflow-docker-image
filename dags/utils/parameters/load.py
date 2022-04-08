@@ -142,9 +142,9 @@ def _load(**setup):
             select block, timestamp, tx_hash, order_index,
             'JUG.ilks.duty' as parameter,
             maker.public.etl_hextostr(substr(location, 3, 42)) as ilk,
-            iff(maker.public.etl_hextoint(prev_value) > 0, round(pow(maker.public.etl_hextoint(prev_value) / pow(10, 27), 606024365), 4) - 1, 0)
+            iff(maker.public.etl_hextoint(prev_value) > 0, round(pow(maker.public.etl_hextoint(prev_value) / pow(10, 27), 31536000), 4) - 1, 0)
             as from_value,
-            iff(maker.public.etl_hextoint(curr_value) > 0, round(pow(maker.public.etl_hextoint(curr_value) / pow(10, 27), 606024365), 4) - 1, 0)
+            iff(maker.public.etl_hextoint(curr_value) > 0, round(pow(maker.public.etl_hextoint(curr_value) / pow(10, 27), 31536000), 4) - 1, 0)
             as to_value,
             'DssSpell' as DssSpell
             from edw_share.raw.storage_diffs
