@@ -1,18 +1,18 @@
 import sys
 from datetime import datetime, timedelta
 
+sys.path.append('/opt/airflow/')
+
 from airflow.decorators import dag, task
 from dags.connectors.sf import sf
 from dags.utils.history.dai_history import update_dai_history
-
-sys.path.append('/opt/airflow/')
 
 # [START default_args]
 # These args will get passed on to each operator
 # You can override them on a per-task basis during operator initialization
 default_args = {
     "owner": "airflow",
-    "email": ["piotr.m.klis@gmail.com", "airflow@data.makerdao.network"],
+    "email": "airflow@data.makerdao.network",
     "email_on_failure": True,
     "retries": 0,
     "retry_delay": timedelta(minutes=1),

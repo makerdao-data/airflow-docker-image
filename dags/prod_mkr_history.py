@@ -1,11 +1,11 @@
 import sys
 from datetime import datetime, timedelta
 
+sys.path.append('/opt/airflow/')
+
 from airflow.decorators import dag, task
 from dags.connectors.sf import sf
 from dags.utils.history.mkr_history import update_mkr_history
-
-sys.path.append('/opt/airflow/')
 
 # [START default_args]
 # These args will get passed on to each operator

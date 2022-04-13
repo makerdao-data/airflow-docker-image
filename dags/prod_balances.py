@@ -1,11 +1,11 @@
 import sys
 from datetime import datetime, timedelta
 
+sys.path.append('/opt/airflow/')
+
 from airflow.decorators import dag, task
 from dags.connectors.sf import connection as conn
-from dags.utils.balances import update_token_balances
-
-sys.path.append('/opt/airflow/')
+from dags.utils.balances.update_tkn_balances import update_token_balances
 
 # [START default_args]
 # These args will get passed on to each operator
@@ -24,7 +24,7 @@ default_args = {
 @dag(
     default_args=default_args,
     schedule_interval='0 0 * * *',
-    start_date=datetime(2022, 5, 0),
+    start_date=datetime(2022, 3, 22, 10),
     max_active_runs=1,
     catchup=False,
 )

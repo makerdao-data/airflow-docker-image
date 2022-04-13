@@ -1,4 +1,6 @@
+import pandas as pd
 from pandas import DataFrame
+from snowflake.connector.pandas_tools import write_pandas
 
 def _gen_bal_df(df: DataFrame) -> DataFrame:
     """
