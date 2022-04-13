@@ -30,7 +30,7 @@ THIRD_PARTY_INDEXES = {
     'google-cloud-automl': 'https://googleapis.dev/python/automl/latest',
     'google-cloud-bigquery': 'https://googleapis.dev/python/bigquery/latest',
     'google-cloud-bigquery-datatransfer': 'https://googleapis.dev/python/bigquerydatatransfer/latest',
-    'google-cloud-bigquery-storage': 'https://googleapis.dev/python/bigquerystorage/latest',
+    'google-cloud-bigquery-storage': 'https://googleapis.dev/python/bigquerystorage/1.1.0',
     'google-cloud-bigtable': 'https://googleapis.dev/python/bigtable/latest',
     'google-cloud-container': 'https://googleapis.dev/python/container/latest',
     'google-cloud-core': 'https://googleapis.dev/python/google-cloud-core/latest',
