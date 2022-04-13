@@ -1,6 +1,5 @@
 import pandas as pd
 from pandas import DataFrame
-from airflow.exceptions import AirflowFailException
 from snowflake.connector.pandas_tools import write_pandas
 
 def _gen_bal_df(df: DataFrame, thresh: float) -> DataFrame:
