@@ -28,7 +28,7 @@ def _setup():
 
     tip = sf.execute(f"""
         SELECT MAX(BLOCK), MAX(TIMESTAMP)
-        FROM edw_share.raw.blocks;
+        FROM edw_share.raw.storage_diffs;
     """).fetchone()
 
     last_scanned_block = tip[0]
