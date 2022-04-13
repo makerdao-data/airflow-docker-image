@@ -1,26 +1,24 @@
 """
 Automating Growth KPIs google sheets report.
 """
-
 import calendar
 import sys
+import requests
 from datetime import date
-from typing import Tuple
+from typing import List, Tuple
 
 import pandas as pd
 from gspread.client import Client
 from gspread.spreadsheet import Spreadsheet
 from gspread_dataframe import set_with_dataframe
-from airflow.exceptions import AirflowFailException
 from snowflake.connector.cursor import SnowflakeCursor
+from airflow.exceptions import AirflowFailException
 
-
-def _conduct_analyses(sf: SnowflakeCursor) -> Tuple[pd.DataFrame]:
+def _collect_data(sf: SnowflakeCursor) -> Tuple[pd.DataFrame]:
     """
-    Conduct growth report analyses
+    Collecting data required for analyses
     """
-
-    # Fetching data then renaming columns and stripping datetime
+    # Fetching 1/2 of needed data then renaming columns and stripping datetime
     today = date.today()
     try:
         hist_vaults = pd.DataFrame(
@@ -35,8 +33,29 @@ def _conduct_analyses(sf: SnowflakeCursor) -> Tuple[pd.DataFrame]:
     hist_vaults.rename(columns=renamed_columns, inplace=True)
     hist_vaults['DATE'] = hist_vaults.loc[:, 'DATE'].dt.date
 
+    # Fetching 2/2 of needed data then processing json
+    tokens = ('WETH', 'WBTC')
+    bret = []
+    for token in tokens:
+        try:
+            resp = requests.get(f'https://api.blockanalitica.com/api/defi/locked/{token}/?format=json')
+        except:
+            raise AirflowFailException(f"Failed to collect blockanalitica data for token: {token}")
+        resp_json = resp.json()
+        df = pd.DataFrame(resp_json['rows'], columns=resp_json['column_names']).set_index('Timestamp')
+        bret.append(df)
+    hist_collat = pd.concat([bret[0], bret[1]], axis=1).reset_index()
+    hist_collat['Timestamp'] = hist_collat['Timestamp'].apply(lambda x: datetime.strptime(x, '%Y-%m-%d'))
+
+    return (hist_vaults, hist_collat)
+
+
+def _conduct_analyses(vaults_df: pd.DataFrame) -> Tuple[pd.DataFrame]:
+    """
+    Conduct growth report analyses
+    """
     # Analysis 1 (Dai distribution & available debt)
-    df = hist_vaults[hist_vaults['PRINCIPAL'] > 10]
+    df = vaults_df[vaults_df['PRINCIPAL'] > 10]
     df.loc[:, 'AVAILABLE_DEBT_PERCENT'] = df['AVAILABLE_DEBT'] / (
         df['PRINCIPAL'] + df['AVAILABLE_DEBT'])
     bins = [10, 10000, 100000, 1000000, 10000000, 10000000000000]
@@ -55,7 +74,7 @@ def _conduct_analyses(sf: SnowflakeCursor) -> Tuple[pd.DataFrame]:
     }).reset_index())
 
     # Analysis 2 (Volume of collateral locked)
-    df = hist_vaults
+    df = vaults_df
     df.loc[:, 'COLLATERAL_DAI'] = df['COLLATERAL'] * df['OSM_PRICE']
     df = df[df['COLLATERAL_DAI'] > 10]
     df.loc[:, 'BINS'] = pd.cut(df['COLLATERAL_DAI'],
@@ -77,19 +96,33 @@ def _upload(dfs: Tuple[pd.DataFrame], gsheet: Spreadsheet) -> None:
     """
 
     uploads = (
-        (dfs[0], gsheet.worksheet("Dai distribution & available debt")),
-        (dfs[1], gsheet.worksheet("Volume of collateral locked")),
+        [dfs[0], gsheet.worksheet("Overall collateral market")],
+        (dfs[1], gsheet.worksheet("Dai distribution & available debt")),
+        (dfs[2], gsheet.worksheet("Volume of collateral locked")),
     )
 
+    # Iterate through worksheets
     for upload in uploads:
+
         # Get all dates from spreadsheet, remove empty rows
         dates = upload[1].col_values(1)
         if ' ' in dates:
             dates.remove(' ')
-        # Get last and current date
-        last_date = dates[-1].split(' ')[0]
+
+        # Get last date, process dataframe if needed
+        if '-' in dates[-1]:
+            last_date = dates[-1].split(' ')[0]
+            ymd_last_date = list(map(int, last_date.split('-')))
+            idx = (dates.index(dates[-1]) + 1)
+        else:
+            last_date = datetime.strptime(dates[-1], '%m/%d/%Y')
+            upload[0] = upload[0][upload[0]['Timestamp'] > last_date]
+            upload[0]['Timestamp'] = upload[0]['Timestamp'].apply(lambda x: x.strftime('%m/%d/%Y'))
+            ymd_last_date = [last_date.year, last_date.month, last_date.day]
+            idx = (len(dates) + 1)
+
+        # Get current date
         today = date.today()
-        ymd_last_date = list(map(int, last_date.split('-')))
 
         # Check sheet for update location, or if current update is to be skipped
         if today.month == ymd_last_date[1]:
@@ -98,7 +131,7 @@ def _upload(dfs: Tuple[pd.DataFrame], gsheet: Spreadsheet) -> None:
                 try:
                     set_with_dataframe(upload[1],
                                        upload[0],
-                                       row=(dates.index(dates[-1]) + 1),
+                                       row=idx,
                                        include_column_header=False)
                 except:
                     raise AirflowFailException(
@@ -126,8 +159,11 @@ def _upload(dfs: Tuple[pd.DataFrame], gsheet: Spreadsheet) -> None:
 
 
 def growth_report_updater(sf: SnowflakeCursor, gclient: Client) -> None:
+    vaults_df, collats_df  = _collect_data(sf)
+    dist_debt_df, lock_coll_df = _conduct_analyses(vaults_df)
+
     _upload(
-        _conduct_analyses(sf),
+        (collats_df, dist_debt_df, lock_coll_df),
         gclient.open("Growth KPIs #1"),
     )
 
