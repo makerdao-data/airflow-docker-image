@@ -161,3 +161,6 @@ plotly==4.12.0
 snowflake-connector-python[pandas]
 gspread
 gspread_dataframe
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib
