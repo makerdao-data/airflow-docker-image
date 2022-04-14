@@ -34,7 +34,7 @@
 #                        much smaller.
 #
 ARG AIRFLOW_VERSION="2.0.2"
-ARG AIRFLOW_EXTRAS="async,amazon,celery,cncf.kubernetes,docker,dask,elasticsearch,ftp,grpc,hashicorp,http,ldap,google,microsoft.azure,mysql,postgres,redis,sendgrid,sftp,slack,ssh,statsd,virtualenv"
+ARG AIRFLOW_EXTRAS="async,amazon,celery,cncf.kubernetes,docker,dask,elasticsearch,ftp,hashicorp,http,ldap,mysql,postgres,redis,sendgrid,sftp,slack,ssh,statsd,virtualenv"
 ARG ADDITIONAL_AIRFLOW_EXTRAS=""
 ARG ADDITIONAL_PYTHON_DEPS=""
 
@@ -247,6 +247,7 @@ ENV ADDITIONAL_PYTHON_DEPS=${ADDITIONAL_PYTHON_DEPS} \
     EAGER_UPGRADE_ADDITIONAL_REQUIREMENTS=${EAGER_UPGRADE_ADDITIONAL_REQUIREMENTS} \
     CONTINUE_ON_PIP_CHECK_FAILURE=${CONTINUE_ON_PIP_CHECK_FAILURE}
 
+
 WORKDIR /opt/airflow
 
 # hadolint ignore=SC2086, SC2010
@@ -294,10 +295,8 @@ LABEL org.apache.airflow.distro="debian" \
   org.opencontainers.image.title="Build Image Segment for Production Airflow Image" \
   org.opencontainers.image.description="Installed Apache Airflow with build-time dependencies"
 
-
 COPY custom_requirements.txt custom_requirements.txt
 RUN pip install --no-cache-dir --user -r custom_requirements.txt
-
 
 ##############################################################################################
 # This is the actual Airflow image - much smaller than the build one. We copy
