@@ -27,10 +27,17 @@ def _collect_data(sf: SnowflakeCursor) -> Tuple[pd.DataFrame]:
             ).fetchall())
     except:
         raise AirflowFailException("Growth Report data sourcing query failed.")
-    renamed_columns = {}
-    for key in list(hist_vaults.keys()):
-        renamed_columns[key] = sf.description[key].name
-    hist_vaults.rename(columns=renamed_columns, inplace=True)
+
+    # Renaming columns and stripping time from dates
+    hist_vaults.rename(columns={
+        0: 'PRINCIPAL',
+        1: 'AVAILABLE_DEBT',
+        2: 'VAULT',
+        3: 'ILK',
+        4: 'OSM_PRICE',
+        5: 'COLLATERAL',
+        6: 'DATE'
+    }, inplace=True)
     hist_vaults['DATE'] = hist_vaults.loc[:, 'DATE'].dt.date
 
     # Fetching 2/2 of needed data then processing json
