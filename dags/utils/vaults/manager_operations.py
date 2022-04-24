@@ -44,7 +44,7 @@ def _manager_operations(manager, **setup):
                 block,
                 timestamp,
                 tx_hash,
-                arguments[0]['value'],
+                arguments[0]['value'] if arguments[0]['value'] != '0x574254432d43000000000000000000' else 'WBTC-C',
                 outputs[1]['value'],
                 arguments[1]['value'],
                 outputs[0]['value'],
