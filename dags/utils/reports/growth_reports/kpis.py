@@ -1,7 +1,6 @@
 """
 Automating Growth KPIs google sheets report.
 """
-import calendar
 import sys
 import requests
 from datetime import date, datetime

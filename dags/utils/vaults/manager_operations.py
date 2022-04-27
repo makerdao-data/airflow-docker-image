@@ -39,12 +39,17 @@ def _manager_operations(manager, **setup):
             arguments = json.loads(arguments.replace("\'", "\""))
             outputs = json.loads(outputs.replace("\'", "\""))
             
+            if arguments[0]['value'] == '0x574254432d43000000000000000000':
+                ilk = 'WBTC-C'
+            else:
+                ilk = arguments[0]['value']
+
             operation = [
                 str(block).zfill(9) + '_' + str(tx_index).zfill(3) + '_' + breadcrumb,
                 block,
                 timestamp,
                 tx_hash,
-                arguments[0]['value'],
+                ilk,
                 outputs[1]['value'],
                 arguments[1]['value'],
                 outputs[0]['value'],
