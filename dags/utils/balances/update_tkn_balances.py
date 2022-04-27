@@ -49,7 +49,9 @@ def update_token_balances(tkn: str, thresh: float, conn) -> None:
 
     # Clear table then push balances
     conn.cursor().execute(f"DELETE FROM MAKER.BALANCES.{tkn}_BALANCES")
-    write_pandas(conn, push_df, f'{tkn}_BALANCES', database='MAKER', schema='BALANCES')
+    conn.cursor().execute(f"""USE DATABASE MAKER;""")
+    conn.cursor().execute(f"""USE SCHEMA BALANCES;""")
+    write_pandas(conn=conn, df=push_df, table_name=f'{tkn}_BALANCES', database='MAKER', schema='BALANCES')
 
     # Return None
     return None

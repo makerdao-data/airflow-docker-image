@@ -1,10 +1,10 @@
 import sys
 from datetime import datetime, timedelta
+import snowflake.connector
 
 sys.path.append('/opt/airflow/')
 
 from airflow.decorators import dag, task
-from dags.connectors.sf import connection as conn
 from dags.utils.balances.update_tkn_balances import update_token_balances
 
 # [START default_args]
@@ -19,11 +19,17 @@ default_args = {
 }
 # [END default_args]
 
+from config import SNOWFLAKE_CONNECTION
+
+SNOWFLAKE_CONNECTION['database'] = 'MAKER'
+SNOWFLAKE_CONNECTION['schema'] = 'BALANCES'
+
+conn = snowflake.connector.connect(**SNOWFLAKE_CONNECTION)
 
 # [START instantiate_dag]
 @dag(
     default_args=default_args,
-    schedule_interval='0 0 * * *',
+    schedule_interval='0 6 * * *',
     start_date=datetime(2022, 3, 22, 10),
     max_active_runs=1,
     catchup=False,

@@ -1,10 +1,9 @@
 """
 Automating Growth KPIs google sheets report.
 """
-import calendar
 import sys
 import requests
-from datetime import date
+from datetime import date, datetime
 from typing import List, Tuple
 
 import pandas as pd
