@@ -26,7 +26,7 @@ def extract_calls(start_block=None, end_block=None, start_time=None, end_time=No
         c = contract
 
     query_calls = f"""
-        SELECT *, (SELECT STRING_AGG(FORMAT('%03d', CAST(IF(traces='', '0', traces) AS INT64)), '_') FROM UNNEST(SPLIT(trace_address)) AS traces) as breadcrumb
+        SELECT DISTINCT *, (SELECT STRING_AGG(FORMAT('%03d', CAST(IF(traces='', '0', traces) AS INT64)), '_') FROM UNNEST(SPLIT(trace_address)) AS traces) as breadcrumb
         FROM `bigquery-public-data.crypto_ethereum.traces`
         WHERE (block_number between {start_block} and {end_block})
             and date(block_timestamp) >= '{start_time[:10]}'
@@ -173,7 +173,7 @@ def extract_calls_gas(
         c = contract
 
     query_calls = f"""
-        SELECT
+        SELECT DISTINCT
             tr.transaction_hash, tr.transaction_index, tr.from_address, tr.to_address, tr.value,
             tr.input, tr.output, tr.trace_type, tr.call_type, tr.reward_type, tr.gas, tr.gas_used,
             tr.subtraces, tr.trace_address, tr.error, tr.status, tr.block_timestamp, tr.block_number,
