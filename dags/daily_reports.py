@@ -7,6 +7,8 @@ from airflow.decorators import dag, task
 from dags.connectors.gsheets import gclient
 from dags.connectors.sf import sf
 from dags.utils.reports.growth_reports.kpis import growth_report_updater
+from dags.utils.reports.votes import populate_vote_sheet
+
 
 # [START default_args]
 # These args will get passed on to each operator
@@ -37,7 +39,16 @@ def daily_reports():
         growth_report_updater(sf, gclient)
 
         return
+    
+    @task()
+    def update_vote_sheet():
+        populate_vote_sheet(
+            gclient.open_by_url(
+                'https://docs.google.com/spreadsheets/d/1MkC0GILLWaRUEKU1hz6nKft21uyZATTreAVxg5x3hkU/'
+            )
+        )
 
+    update_vote_sheet()
     update_growth_report()
 
 
