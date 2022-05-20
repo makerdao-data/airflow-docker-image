@@ -370,6 +370,6 @@ def upload_new_params(engine: snowflake.connector.connection.SnowflakeConnection
     """
     result = get_new_params(engine, chain)
     pattern = _write_to_stage(sf, list(result.to_numpy()), f"mcd.internal.TEST_DSPOT_PARAMS_STAGE") 
-    _write_to_table(sf,f"mcd.internal.TEST_DSPOT_PARAMS_STAGE",f"mcd.internal.TEST_DSPOT_PARAMS",pattern)
+    _write_to_table(sf,f"mcd.internal.TEST_DSPOT_PARAMS_STAGE",f"maker.public.parameters",pattern)
 
     return
