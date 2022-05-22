@@ -147,99 +147,54 @@ def new_psm_params(engine: snowflake.connector.connection.SnowflakeConnection,
         # Create result df
         df = pd.DataFrame()
         
-        # Fetch current and previously stored tin values
-        tin = int(chain.eth.getStorageAt(account=Web3.toChecksumAddress(contract[0]), position=5).hex(), 16)
-        last_tin = engine.cursor().execute(
-            f"""select max(block), to_value from maker.public.parameters where parameter = 'PSM.tin' and ilk ='{contract[2]}' group by to_value"""
-        ).fetchone()
-        
-        proc = True
-        # If previous tin value does not exist, create entry with first
-        if not last_tin:
-            # Set variables for result dataframe
-            tx_hash = contract[1]
-            block = int(chain.eth.get_transaction(contract[1])['blockNumber'])
-            source = contract[0]
-            timestamp = pd.Timestamp(engine.cursor().execute(f"select TIMESTAMP from EDW_SHARE.RAW.BLOCKS where BLOCK = {block}").fetchone()[0])
-            prev_value = None
-            curr_value = tin
-        # Do nothing if last updated value is equal to current. No update needed.
-        elif last_tin[1] == tin:
-            print('eq')
-            proc = False
-        # If value updated, create entry with current block, timestamp and source. 
-        # Note: this should be replaced with fields on the parameter-changing tx. 
-        # Nothing in database yet to test this with, so defaulting to fields relating to moment of checking.
-        # Source and Tx hash unable to be included due to the aforementioned. 
-        else:
-            tx_hash = None
-            block = chain.eth.blockNumber
-            source = None 
-            timestamp = pd.Timestamp(datetime.fromtimestamp(chain.eth.getBlock(block).timestamp))
-            prev_value = last_tin[1]
-            curr_value = tin
-        
-        if proc:
-            # Populate df for tin
-            df.at[0, 'PREV_VALUE'] = prev_value
-            df.at[0, 'CURR_VALUE'] = curr_value
-            df.at[0, 'PARAMETER'] = 'PSM.tin'
-            df.at[0, 'TIMESTAMP'] = timestamp
-            df.at[0, 'TX_HASH'] = tx_hash
-            df.at[0, 'BLOCK'] = block
-            df.at[0, 'SOURCE'] = source
-            df.at[0, 'ILK'] = contract[2]
-        
-        # Fetch current and previously stored tout values
-        tout = int(chain.eth.getStorageAt(account=Web3.toChecksumAddress(contract[0]), position=6).hex(), 16)
-        last_tout = engine.cursor().execute(
-            f"""select max(block), to_value from MAKER.PUBLIC.PARAMETERS where parameter = 'PSM.tout' group by to_value"""  
-        ).fetchone()
-        
-        proc = True
-        # If previous tin value does not exist, create entry with first
-        if not last_tout:
-            # Set variables for result dataframe
-            tx_hash = contract[1]
-            block = int(chain.eth.get_transaction(contract[1])['blockNumber'])
-            source = contract[0]
-            timestamp = pd.Timestamp(engine.cursor().execute(f"select TIMESTAMP from EDW_SHARE.RAW.BLOCKS where BLOCK = {block}").fetchone()[0])
-            prev_value = None
-            curr_value = tout
-        # Do nothing if last updated value is equal to current. No update needed.
-        elif tout == last_tout[1]:
-            proc = False
-        # If value updated, create entry with current block, timestamp and source. 
-        # Note: this should be replaced with fields on the parameter-changing tx. 
-        # Nothing in database yet to test this with, so defaulting to fields relating to moment of checking.
-        # Source and Tx hash unable to be included due to the aforementioned.             
-        else:
-            tx_hash = None
-            block = chain.eth.blockNumber
-            source = None 
-            timestamp = pd.Timestamp(datetime.fromtimestamp(chain.eth.getBlock(block).timestamp))
-            prev_value = last_tout[1]
-            curr_value = tout
-        
-        if proc:
-            # Get input index
-            if len(df) == 0:
-                idx = 0
+        for param in (('tin', 5), ('tout', 6)):
+            # Fetch current and previously stored values
+            curr_val = int(chain.eth.getStorageAt(account=Web3.toChecksumAddress(contract[0]), position=param[1]).hex(), 16)
+            last_val = engine.cursor().execute(
+                f"""select max(block), to_value from maker.public.parameters where parameter = 'PSM.{param[0]}' and ilk ='{contract[2]}' group by to_value"""
+            ).fetchone()
+            
+            proc = True
+            # If previous tin value does not exist, create entry with first
+            if not last_val:
+                # Set variables for result dataframe
+                tx_hash = contract[1]
+                block = int(chain.eth.get_transaction(contract[1])['blockNumber'])
+                source = contract[0]
+                timestamp = pd.Timestamp(engine.cursor().execute(f"select TIMESTAMP from EDW_SHARE.RAW.BLOCKS where BLOCK = {block}").fetchone()[0])
+                prev_value = None
+                curr_value = curr_val
+            # Do nothing if last updated value is equal to current. No update needed.
+            elif last_val[1] == curr_val:
+                proc = False
+            # If value updated, create entry with current block, timestamp and source. 
+            # Note: this should be replaced with fields on the parameter-changing tx. 
+            # Nothing in database yet to test this with, so defaulting to fields relating to moment of checking.
+            # Source and Tx hash unable to be included due to the aforementioned. 
             else:
-                idx = 1
-            # Populate df for tout
-            df.at[idx, 'PREV_VALUE'] = prev_value
-            df.at[idx, 'CURR_VALUE'] = curr_value
-            df.at[idx, 'PARAMETER'] = 'PSM.tout'
-            df.at[idx, 'TIMESTAMP'] = timestamp
-            df.at[idx, 'TX_HASH'] = tx_hash
-            df.at[idx, 'BLOCK'] = block
-            df.at[idx, 'SOURCE'] = source
-            df.at[idx, 'ILK'] = contract[2]
+                tx_hash = None
+                block = chain.eth.blockNumber
+                source = None 
+                timestamp = pd.Timestamp(datetime.fromtimestamp(chain.eth.getBlock(block).timestamp))
+                prev_value = last_val[1]
+                curr_value = curr_val
+            
+            if proc:
+                # Populate df for tin
+                idx = len(df)
+                df.at[idx, 'PREV_VALUE'] = prev_value
+                df.at[idx, 'CURR_VALUE'] = curr_value
+                df.at[idx, 'PARAMETER'] = f'PSM.{param[0]}'
+                df.at[idx, 'TIMESTAMP'] = timestamp
+                df.at[idx, 'TX_HASH'] = tx_hash
+                df.at[idx, 'BLOCK'] = block
+                df.at[idx, 'SOURCE'] = source
+                df.at[idx, 'ILK'] = contract[2]
         
         results.append(df)
 
     return pd.concat([results[0], results[1], results[2]], axis=0)    
+
 
 
 def new_gsm_params(engine: snowflake.connector.connection.SnowflakeConnection,
@@ -349,7 +304,7 @@ def get_new_params(engine: snowflake.connector.connection.SnowflakeConnection,
     concatenated.CURR_VALUE = [int(i) if not math.isnan(i) else None for i in concatenated.CURR_VALUE]
     concatenated.BLOCK = [int(i) for i in concatenated.BLOCK]
     concatenated.replace({np.nan: None}, inplace=True)
-    concatenated = concatenated.reset_index().drop(columns='index')
+    concatenated = concatenated.reset_index(drop=True)
     
     # Removing all values with same pre & post values.
     for i in range(len(concatenated)):
