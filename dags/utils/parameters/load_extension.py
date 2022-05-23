@@ -285,6 +285,7 @@ def new_pause_params(engine: snowflake.connector.connection.SnowflakeConnection,
         
     return df
 
+
 def get_new_params(engine: snowflake.connector.connection.SnowflakeConnection,
                    chain: web3.main.Web3) -> pd.DataFrame:
     """

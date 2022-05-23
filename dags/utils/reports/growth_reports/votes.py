@@ -24,7 +24,23 @@ def populate_vote_sheet(sheet: gspread.spreadsheet.Spreadsheet) -> None:
     
     # Store as dataframe and create id column
     execs = pd.DataFrame.from_records(pre_df)[
-        ['title', 'proposalBlurb', 'key','address','date','active','proposalLink','hasBeenCast', 'hasBeenScheduled', 'expiration', 'mkrSupport', 'executiveHash', 'officeHours', 'dateExecuted', 'datePassed', 'eta', 'nextCastTime']
+        ['title', 
+        'proposalBlurb', 
+        'key',
+        'address',
+        'date',
+        'active',
+        'proposalLink',
+        'hasBeenCast', 
+        'hasBeenScheduled', 
+        'expiration', 
+        'mkrSupport', 
+        'executiveHash', 
+        'officeHours',
+        'dateExecuted',
+        'datePassed',
+        'eta',
+        'nextCastTime']
     ].sort_index(ascending=False).reset_index(drop=True)
     execs = execs.reset_index().rename(columns={'index':'execId'})
         
