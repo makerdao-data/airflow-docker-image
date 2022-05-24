@@ -1,10 +1,12 @@
-import web3
+import sys
+sys.path.append('/opt/airflow/')
 import math
 import datetime
 import snowflake
 import pandas as pd
 import numpy as np
-from dags.connectors.sf import _write_to_stage, _write_to_table
+import web3
+from dags.connectors.sf import _write_to_stage, _write_to_table, _clear_stage
 
 def new_flopper_params(engine: snowflake.connector.connection.SnowflakeConnection,
                        chain: web3.main.Web3) -> pd.DataFrame:    
@@ -87,7 +89,7 @@ def new_esm_params(engine: snowflake.connector.connection.SnowflakeConnection,
     result = int(
         int(
             chain.eth.getStorageAt(
-                account=Web3.toChecksumAddress(
+                account=web3.Web3.toChecksumAddress(
                     '0x09e05fF6142F2f9de8B6B65855A1d56B6cfE4c58'
                 ), 
                 position=3
@@ -149,7 +151,7 @@ def new_psm_params(engine: snowflake.connector.connection.SnowflakeConnection,
         
         for param in (('tin', 5), ('tout', 6)):
             # Fetch current and previously stored values
-            curr_val = int(chain.eth.getStorageAt(account=Web3.toChecksumAddress(contract[0]), position=param[1]).hex(), 16)
+            curr_val = int(chain.eth.getStorageAt(account=web3.Web3.toChecksumAddress(contract[0]), position=param[1]).hex(), 16)
             last_val = engine.cursor().execute(
                 f"""select max(block), to_value from maker.public.parameters where parameter = 'PSM.{param[0]}' and ilk ='{contract[2]}' group by to_value"""
             ).fetchone()
@@ -196,7 +198,6 @@ def new_psm_params(engine: snowflake.connector.connection.SnowflakeConnection,
     return pd.concat([results[0], results[1], results[2]], axis=0)    
 
 
-
 def new_gsm_params(engine: snowflake.connector.connection.SnowflakeConnection,
                    chain: web3.main.Web3) -> pd.DataFrame:
     """
@@ -205,7 +206,7 @@ def new_gsm_params(engine: snowflake.connector.connection.SnowflakeConnection,
     """
     # Fetch last updated value
     last_val = engine.cursor().execute("""select max(block), to_value from maker.public.parameters where parameter = 'GSM.pause' group by to_value""").fetchone()
-    result = int(chain.eth.getStorageAt(account=Web3.toChecksumAddress('0xbe286431454714f511008713973d3b053a2d38f3'), position=4).hex(), 16)
+    result = int(chain.eth.getStorageAt(account=web3.Web3.toChecksumAddress('0xbe286431454714f511008713973d3b053a2d38f3'), position=4).hex(), 16)
     
     # If parameter not existent in dataset, create first entry
     if not last_val:
@@ -241,6 +242,7 @@ def new_gsm_params(engine: snowflake.connector.connection.SnowflakeConnection,
         
     return df
 
+
 def new_pause_params(engine: snowflake.connector.connection.SnowflakeConnection,
                      chain: web3.main.Web3) -> pd.DataFrame:
     """
@@ -249,7 +251,7 @@ def new_pause_params(engine: snowflake.connector.connection.SnowflakeConnection,
     """
     # Fetch last updated value
     last_val = engine.cursor().execute("""select max(block), to_value from maker.public.parameters where parameter = 'GSM.pause' group by to_value""").fetchone()
-    result = int(chain.eth.getStorageAt(account=Web3.toChecksumAddress('0xBB856d1742fD182a90239D7AE85706C2FE4e5922'), position=9).hex(), 16)
+    result = int(chain.eth.getStorageAt(account=web3.Web3.toChecksumAddress('0xBB856d1742fD182a90239D7AE85706C2FE4e5922'), position=9).hex(), 16)
 
     # If parameter not existent in dataset, create first entry
     if not last_val:
@@ -316,7 +318,7 @@ def get_new_params(engine: snowflake.connector.connection.SnowflakeConnection,
             continue
         
         
-    return concatenated[['TX_HASH','SOURCE','PARAMETER','ILK','TIMESTAMP','BLOCK','PREV_VALUE','CURR_VALUE']]
+    return concatenated[['BLOCK','TIMESTAMP','TX_HASH','SOURCE','PARAMETER','ILK','PREV_VALUE','CURR_VALUE']]
 
 
 def upload_new_params(engine: snowflake.connector.connection.SnowflakeConnection,
@@ -325,7 +327,7 @@ def upload_new_params(engine: snowflake.connector.connection.SnowflakeConnection
     Generate and upload dataframe of newly obtained parameters.
     """
     result = get_new_params(engine, chain)
-    pattern = _write_to_stage(sf, list(result.to_numpy()), f"mcd.internal.TEST_DSPOT_PARAMS_STAGE") 
-    _write_to_table(sf,f"mcd.internal.TEST_DSPOT_PARAMS_STAGE",f"maker.public.parameters",pattern)
-
+    pattern = _write_to_stage(engine.cursor(), list(result.to_numpy()), f"mcd.internal.TEST_DSPOT_PARAMS_STAGE") 
+    _write_to_table(engine.cursor(), f"mcd.internal.TEST_DSPOT_PARAMS_STAGE",f"mcd.internal.TEST_DSPOT_PARAMS_STAGE", pattern)
+    _clear_stage(engine.cursor(), f"mcd.internal.TEST_DSPOT_PARAMS_STAGE", pattern)
     return
