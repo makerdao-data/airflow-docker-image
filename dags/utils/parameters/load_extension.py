@@ -8,8 +8,9 @@ import numpy as np
 import web3
 from dags.connectors.sf import _write_to_stage, _write_to_table, _clear_stage
 
+
 def new_flopper_params(engine: snowflake.connector.connection.SnowflakeConnection,
-                       chain: web3.main.Web3) -> pd.DataFrame:    
+                       chain: web3.main.Web3, setup) -> pd.DataFrame:    
     """
     Function to fetch new Flopper parameters:
         - tau
@@ -20,18 +21,13 @@ def new_flopper_params(engine: snowflake.connector.connection.SnowflakeConnectio
         - chain
             - web3.main.Web3
     """
-    
-    # Identify which blocks to parse
-    last_block = engine.cursor().execute("""select max(block) from maker.public.parameters where parameter ='FLOPPER.tau'""").fetchone()[0]
-    if not last_block:
-        last_block = 0
 
     # Fetch data
     query = f"""select block, timestamp, tx_hash, prev_value, curr_value, 'FLOPPER.tau' as parameter
                     from edw_share.raw.storage_diffs 
                         where LOCATION = '6' 
                         and contract = '0xa41b6ef151e06da0e34b009b86e828308986736d'
-                        and block > {last_block}
+                        and block > {setup['start_block']} and block <= {setup['end_block']}
                         """
     result = pd.read_sql(query, engine)
     
@@ -46,23 +42,18 @@ def new_flopper_params(engine: snowflake.connector.connection.SnowflakeConnectio
 
 
 def new_flapper_params(engine: snowflake.connector.connection.SnowflakeConnection,
-                       chain: web3.main.Web3) -> pd.DataFrame:
+                       chain: web3.main.Web3, setup) -> pd.DataFrame:
     """
     Function to fetch new Flapper parameters:
         - tau
     """
-    
-    # Identify which blocks to parse
-    last_block = engine.cursor().execute("""select max(block) from maker.public.parameters where parameter ='FLOPPER.tau'""").fetchone()[0]
-    if not last_block:
-        last_block = 0
 
     # Fetch data
     query = f"""select block, timestamp, tx_hash, prev_value, curr_value, 'FLAPPER.tau' as parameter
                 from edw_share.raw.storage_diffs 
                     where contract = '0xc4269cc7acdedc3794b221aa4d9205f564e27f0d' 
                     and location = '5'
-                    and block > {last_block}"""
+                    and block > {setup['start_block']} and block <= {setup['end_block']}"""
     result = pd.read_sql(query, engine)
     
     # Iterate through columns, format and populate values
@@ -103,7 +94,7 @@ def new_esm_params(engine: snowflake.connector.connection.SnowflakeConnection,
         timestamp = pd.Timestamp(engine.cursor().execute(f"select TIMESTAMP from EDW_SHARE.RAW.BLOCKS where BLOCK = {block}").fetchone()[0])
         source = '0x09e05fF6142F2f9de8B6B65855A1d56B6cfE4c58'
         tx_hash = '0x814c35277b46ecbb148f280c7dfc5bc38bc5251c4530675e52c32a2cd7e3b3ce'
-        prev_value = None
+        prev_value = 0
     # Do nothing if last updated value is equal to current. No update needed.
     elif last_val[1] == result:
         return None
@@ -164,7 +155,7 @@ def new_psm_params(engine: snowflake.connector.connection.SnowflakeConnection,
                 block = int(chain.eth.get_transaction(contract[1])['blockNumber'])
                 source = contract[0]
                 timestamp = pd.Timestamp(engine.cursor().execute(f"select TIMESTAMP from EDW_SHARE.RAW.BLOCKS where BLOCK = {block}").fetchone()[0])
-                prev_value = None
+                prev_value = 0
                 curr_value = curr_val
             # Do nothing if last updated value is equal to current. No update needed.
             elif last_val[1] == curr_val:
@@ -214,7 +205,7 @@ def new_gsm_params(engine: snowflake.connector.connection.SnowflakeConnection,
         timestamp = pd.Timestamp(engine.cursor().execute(f"select TIMESTAMP from EDW_SHARE.RAW.BLOCKS where BLOCK = {block}").fetchone()[0])
         tx_hash = '0x60215e5c38f8d02a64b4c029619d9efe88671dd7468ad84997f0812fe0ae6cc6'
         source = '0xbe286431454714f511008713973d3b053a2d38f3'
-        prev_value = None
+        prev_value = 0
     # Do nothing if last updated value is equal to current. No update needed.
     elif last_val[1] == result:
         return None
@@ -259,7 +250,7 @@ def new_pause_params(engine: snowflake.connector.connection.SnowflakeConnection,
         timestamp = pd.Timestamp(engine.cursor().execute(f"select TIMESTAMP from EDW_SHARE.RAW.BLOCKS where BLOCK = {block}").fetchone()[0])
         tx_hash = '0x4b7d97c3ea9c1977db40eb6f74ac9851da1a3fac4fa68226d929adf66ef94643'
         source = '0xBB856d1742fD182a90239D7AE85706C2FE4e5922'
-        prev_value = None
+        prev_value = 0
     # Do nothing if last updated value is equal to current. No update needed.
     elif last_val[1] == result:
         return None
@@ -289,14 +280,14 @@ def new_pause_params(engine: snowflake.connector.connection.SnowflakeConnection,
 
 
 def get_new_params(engine: snowflake.connector.connection.SnowflakeConnection,
-                   chain: web3.main.Web3) -> pd.DataFrame:
+                   chain: web3.main.Web3, setup) -> pd.DataFrame:
     """
     Construct dataframe of parameter additions.
     """
     newesm = new_esm_params(engine, chain)
     newpsm = new_psm_params(engine, chain)
-    newflop = new_flopper_params(engine, chain)
-    newflap = new_flapper_params(engine, chain)
+    newflop = new_flopper_params(engine, chain, setup)
+    newflap = new_flapper_params(engine, chain, setup)
     newgsm = new_gsm_params(engine, chain)
     newpause = new_pause_params(engine, chain)
     
@@ -313,7 +304,8 @@ def get_new_params(engine: snowflake.connector.connection.SnowflakeConnection,
     for i in range(len(concatenated)):
         try:      
             if int(concatenated.at[i, 'PREV_VALUE']) == int(concatenated.at[i, 'CURR_VALUE']):
-                concatenated.drop(i, inplace=True)
+                if int(concatenated.at[i, 'CURR_VALUE']) != 0:
+                    concatenated.drop(i, inplace=True)
         except:
             continue
         
@@ -322,12 +314,12 @@ def get_new_params(engine: snowflake.connector.connection.SnowflakeConnection,
 
 
 def upload_new_params(engine: snowflake.connector.connection.SnowflakeConnection,
-                   chain: web3.main.Web3) -> pd.DataFrame:
+                   chain: web3.main.Web3, **setup) -> pd.DataFrame:
     """
     Generate and upload dataframe of newly obtained parameters.
     """
-    result = get_new_params(engine, chain)
+    result = get_new_params(engine, chain, setup)
     pattern = _write_to_stage(engine.cursor(), list(result.to_numpy()), f"mcd.internal.TEST_DSPOT_PARAMS_STAGE") 
-    _write_to_table(engine.cursor(), f"mcd.internal.TEST_DSPOT_PARAMS_STAGE",f"mcd.internal.TEST_DSPOT_PARAMS_STAGE", pattern)
+    _write_to_table(engine.cursor(), f"mcd.internal.TEST_DSPOT_PARAMS_STAGE",f"mcd.internal.TEST_DSPOT_PARAMS", pattern)
     _clear_stage(engine.cursor(), f"mcd.internal.TEST_DSPOT_PARAMS_STAGE", pattern)
     return

@@ -48,14 +48,15 @@ def prod_parameters_load():
         return
     
     @task()
-    def load_ext():
+    def load_ext(setup):
 
-        upload_new_params(engine, chain)
+        upload_new_params(engine, chain, **setup)
 
+        return
 
     setup = setup()
+    load_ext(setup)
     load(setup, setup)
-    load_ext()
 
 
 prod_parameters_load = prod_parameters_load()
