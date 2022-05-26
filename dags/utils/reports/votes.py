@@ -11,38 +11,38 @@ def populate_vote_sheet(sheet: gspread.spreadsheet.Spreadsheet) -> None:
     
     ## Executives ##
     
-    # Fetch executives data
-    url = "https://vote.makerdao.com/api/executive?network=mainnet"
-    r = requests.get(url)
-    executives = r.json()
+    # # Fetch executives data
+    # url = "https://vote.makerdao.com/api/executive?network=mainnet"
+    # r = requests.get(url)
+    # executives = r.json()
     
-    # Isolate needed fields from list of executives
-    pre_df = []
-    for exec in executives:
-        val = { k:v for k, v in exec.items() if k in ('title', 'proposalBlurb', 'key', 'address', 'date', 'active', 'proposalLink') }
-        pre_df.append(dict(list(val.items()) + list(exec['spellData'].items())))
+    # # Isolate needed fields from list of executives
+    # pre_df = []
+    # for exec in executives:
+    #     val = { k:v for k, v in exec.items() if k in ('title', 'proposalBlurb', 'key', 'address', 'date', 'active', 'proposalLink') }
+    #     pre_df.append(dict(list(val.items()) + list(exec['spellData'].items())))
     
-    # Store as dataframe and create id column
-    execs = pd.DataFrame.from_records(pre_df)[
-        ['title', 
-        'proposalBlurb', 
-        'key',
-        'address',
-        'date',
-        'active',
-        'proposalLink',
-        'hasBeenCast', 
-        'hasBeenScheduled', 
-        'expiration', 
-        'mkrSupport', 
-        'executiveHash', 
-        'officeHours',
-        'dateExecuted',
-        'datePassed',
-        'eta',
-        'nextCastTime']
-    ].sort_index(ascending=False).reset_index(drop=True)
-    execs = execs.reset_index().rename(columns={'index':'execId'})
+    # # Store as dataframe and create id column
+    # execs = pd.DataFrame.from_records(pre_df)[
+    #     ['title', 
+    #     'proposalBlurb', 
+    #     'key',
+    #     'address',
+    #     'date',
+    #     'active',
+    #     'proposalLink',
+    #     'hasBeenCast', 
+    #     'hasBeenScheduled', 
+    #     'expiration', 
+    #     'mkrSupport', 
+    #     'executiveHash', 
+    #     'officeHours',
+    #     'dateExecuted',
+    #     'datePassed',
+    #     'eta',
+    #     'nextCastTime']
+    # ].sort_index(ascending=False).reset_index(drop=True)
+    # execs = execs.reset_index().rename(columns={'index':'execId'})
         
     ## Polls ##
     
@@ -59,9 +59,9 @@ def populate_vote_sheet(sheet: gspread.spreadsheet.Spreadsheet) -> None:
     ## Upload ##
     
     # Iterative uploading
-    for upload in ((1, 'execId', sheet.worksheet("executives"), execs),
-                   (2, 'pollId', sheet.worksheet("polls"), polls)):
-        
+    for upload in ((1, 'execId', sheet.worksheet("executives"), execs)):
+                # Reintegrate after fix : (2, 'pollId', sheet.worksheet("polls"), polls)
+
         # Get list of stored values
         stored_vals = upload[2].col_values(upload[0])
         
