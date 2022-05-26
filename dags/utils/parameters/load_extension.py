@@ -10,11 +10,11 @@ from dags.connectors.sf import _write_to_stage, _write_to_table, _clear_stage
 
 
 def new_flopper_params(engine: snowflake.connector.connection.SnowflakeConnection,
-                       chain: web3.main.Web3, setup: dict) -> pd.DataFrame:    
+                        chain: web3.main.Web3, setup: dict) -> pd.DataFrame:    
     """
     Function to fetch new Flopper parameters:
         - tau
-    
+
     Parameters:
         - engine
             - snowflake.connector.connection.SnowflakeConnection
@@ -30,19 +30,20 @@ def new_flopper_params(engine: snowflake.connector.connection.SnowflakeConnectio
                         and block > {setup['start_block']} and block <= {setup['end_block']}
                         """
     result = pd.read_sql(query, engine)
-    
+    result.replace('0x', '0x0', inplace=True)
+
     # Iterate through columns, format and populate values
     for i in range(len(result)):
         result.at[i, 'PREV_VALUE'] = int(result.at[i, 'PREV_VALUE'][:8], 16)
         result.at[i, 'CURR_VALUE'] = int(result.at[i, 'CURR_VALUE'][:8], 16)
         result.at[i, 'SOURCE'] = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
-    
+
     # Return DataFrame
     return result
 
 
 def new_flapper_params(engine: snowflake.connector.connection.SnowflakeConnection,
-                       chain: web3.main.Web3, setup: dict) -> pd.DataFrame:
+                        chain: web3.main.Web3, setup: dict) -> pd.DataFrame:
     """
     Function to fetch new Flapper parameters:
         - tau
@@ -55,24 +56,25 @@ def new_flapper_params(engine: snowflake.connector.connection.SnowflakeConnectio
                     and location = '5'
                     and block > {setup['start_block']} and block <= {setup['end_block']}"""
     result = pd.read_sql(query, engine)
-    
+    result.replace('0x', '0x0', inplace=True)
+
     # Iterate through columns, format and populate values
     for i in range(len(result)):
         result.at[i, 'PREV_VALUE'] = int(str(result.at[i, 'PREV_VALUE'])[:8], 16)
         result.at[i, 'CURR_VALUE'] = int(str(result.at[i, 'CURR_VALUE'])[:8], 16)
         result.at[i, 'SOURCE'] = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
-    
+
     # Return DataFrame
     return result
 
 
 def new_esm_params(engine: snowflake.connector.connection.SnowflakeConnection,
-                   chain: web3.main.Web3, setup: dict) -> pd.DataFrame:  
+                    chain: web3.main.Web3, setup: dict) -> pd.DataFrame:  
     """
     Function to fetch new ESM parameters:
         - min
     """
-    
+
     # Fetch last updated value
     query = f"""select block, timestamp, tx_hash, prev_value, curr_value, 'ESM.min' as parameter
                 from edw_share.raw.storage_diffs 
@@ -80,7 +82,8 @@ def new_esm_params(engine: snowflake.connector.connection.SnowflakeConnection,
                     and location = '3'
                     and block > {setup['start_block']} and block <= {setup['end_block']}"""
     result = pd.read_sql(query, engine)
-    
+    result.replace('0x', '0x0', inplace=True)
+
     # Iterate through columns, format and populate values
     for i in range(len(result)):
         result.at[i, 'PREV_VALUE'] = int(str(result.at[i, 'PREV_VALUE'])[:8], 16)
@@ -92,28 +95,29 @@ def new_esm_params(engine: snowflake.connector.connection.SnowflakeConnection,
 
 
 def new_psm_params(engine: snowflake.connector.connection.SnowflakeConnection, 
-                   chain: web3.main.Web3, setup: dict) -> pd.DataFrame:
+                    chain: web3.main.Web3, setup: dict) -> pd.DataFrame:
     """
     Function to fetch new PSM parameters:
         - tin
         - tout
-        
+
     Will compress function.
     """
-    
+
     results = []
     # Iterate through contracts
-    for contract in [('0x961Ae24a1Ceba861D1FDf723794f6024Dc5485Cf', 'PSM-USDP-A'), 
-                     ('0x89B78CfA322F6C5dE0aBcEecab66Aee45393cC5A', 'PSM-USDC-A'),
-                     ('0x204659B2Fd2aD5723975c362Ce2230Fba11d3900', 'PSM-GUSD-A')]:
+    for contract in [('0x961ae24a1ceba861d1fdf723794f6024dc5485cf', 'PSM-USDP-A'), 
+                        ('0x89b78cfa322f6c5de0abceecab66aee45393cc5a', 'PSM-USDC-A'),
+                        ('0x204659b2fd2ad5723975c362ce2230fba11d3900', 'PSM-GUSD-A')]:
 
         # Fetch parameters
         query = f"""select block, timestamp, tx_hash, prev_value, curr_value, location
             from edw_share.raw.storage_diffs 
                 where contract = '{contract[0]}' 
-                and location = in ('1', '2')
+                and location in ('1', '2')
                 and block > {setup['start_block']} and block <= {setup['end_block']}"""
         result = pd.read_sql(query, engine)
+        result.replace('0x', '0x0', inplace=True)
 
         # Iterate through rows, format and populate values
         for i in range(len(result)):
@@ -122,13 +126,13 @@ def new_psm_params(engine: snowflake.connector.connection.SnowflakeConnection,
             result.at[i, 'SOURCE'] = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
 
         # Add parameter column.
-        result['PARAMETER'] = contract[1]
+        result['ILK'] = contract[1]
 
         # Format
         result.LOCATION.replace(to_replace='1', value='PSM.tin',  inplace=True)
         result.LOCATION.replace(to_replace='2', value='PSM.tout',  inplace=True)
         result.rename(columns={'LOCATION':'PARAMETER'}, inplace=True)
-        
+
         # Append to result store
         results.append(result)
 
@@ -136,12 +140,12 @@ def new_psm_params(engine: snowflake.connector.connection.SnowflakeConnection,
 
 
 def new_dspause_params(engine: snowflake.connector.connection.SnowflakeConnection,
-                   chain: web3.main.Web3, setup: dict) -> pd.DataFrame:
+                    chain: web3.main.Web3, setup: dict) -> pd.DataFrame:
     """
     Function to fetch new DSPause parameters:
         - pause
     """
-    
+
     # Fetch last updated value
     query = f"""select block, timestamp, tx_hash, prev_value, curr_value, 'DSPAUSE.delay' as parameter
                 from edw_share.raw.storage_diffs 
@@ -149,6 +153,7 @@ def new_dspause_params(engine: snowflake.connector.connection.SnowflakeConnectio
                     and location = '4'
                     and block > {setup['start_block']} and block <= {setup['end_block']}"""
     result = pd.read_sql(query, engine)
+    result.replace('0x', '0x0', inplace=True)
     
     # Iterate through columns, format and populate values
     for i in range(len(result)):
@@ -158,10 +163,10 @@ def new_dspause_params(engine: snowflake.connector.connection.SnowflakeConnectio
 
     # Return DataFrame
     return result
-        
+
 
 def new_end_params(engine: snowflake.connector.connection.SnowflakeConnection,
-                     chain: web3.main.Web3, setup: dict) -> pd.DataFrame:
+                        chain: web3.main.Web3, setup: dict) -> pd.DataFrame:
     """
     Function to fetch new END parameters:
         - wait
@@ -174,7 +179,8 @@ def new_end_params(engine: snowflake.connector.connection.SnowflakeConnection,
                     and location = '9'
                     and block > {setup['start_block']} and block <= {setup['end_block']}"""
     result = pd.read_sql(query, engine)
-    
+    result.replace('0x', '0x0', inplace=True)
+
     # Iterate through columns, format and populate values
     for i in range(len(result)):
         result.at[i, 'PREV_VALUE'] = int(str(result.at[i, 'PREV_VALUE'])[:8], 16)
