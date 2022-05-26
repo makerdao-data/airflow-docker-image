@@ -96,7 +96,7 @@ def new_psm_params(engine: snowflake.connector.connection.SnowflakeConnection,
     """
     Function to fetch new PSM parameters:
         - tin
-        - tau
+        - tout
         
     Will compress function.
     """
@@ -121,11 +121,15 @@ def new_psm_params(engine: snowflake.connector.connection.SnowflakeConnection,
             result.at[i, 'CURR_VALUE'] = int(str(result.at[i, 'CURR_VALUE'])[:8], 16)
             result.at[i, 'SOURCE'] = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
 
+        # Add parameter column.
         result['PARAMETER'] = contract[1]
+
+        # Format
         result.LOCATION.replace(to_replace='1', value='PSM.tin',  inplace=True)
         result.LOCATION.replace(to_replace='2', value='PSM.tout',  inplace=True)
         result.rename(columns={'LOCATION':'PARAMETER'}, inplace=True)
-            
+        
+        # Append to result store
         results.append(result)
 
     return pd.concat([results[0], results[1], results[2]], axis=0)    
@@ -186,6 +190,8 @@ def get_new_params(engine: snowflake.connector.connection.SnowflakeConnection,
     """
     Construct dataframe of parameter additions.
     """
+
+    # Fetch results
     newesm = new_esm_params(engine, chain, setup)
     newpsm = new_psm_params(engine, chain, setup)
     newflop = new_flopper_params(engine, chain, setup)
@@ -199,7 +205,8 @@ def get_new_params(engine: snowflake.connector.connection.SnowflakeConnection,
     concatenated.PREV_VALUE = [int(i) if not math.isnan(i) else None for i in concatenated.PREV_VALUE]
     concatenated.CURR_VALUE = [int(i) if not math.isnan(i) else None for i in concatenated.CURR_VALUE]
     concatenated.BLOCK = [int(i) for i in concatenated.BLOCK]
-    concatenated.replace({np.nan: None}, inplace=True)
+    # Why fillna just to replace with None? So the math.isnan comprehension covers all null values without erroring out. Quick fix.
+    concatenated.replace({np.nan: None}, inplace=True) 
     concatenated = concatenated.reset_index(drop=True)
     
     # Removing all values with same pre & post values.
@@ -220,6 +227,7 @@ def upload_new_params(engine: snowflake.connector.connection.SnowflakeConnection
     """
     Generate and upload dataframe of newly obtained parameters.
     """
+    
     result = get_new_params(engine, chain, setup)
     pattern = _write_to_stage(engine.cursor(), list(result.to_numpy()), f"mcd.internal.TEST_DSPOT_PARAMS_STAGE") 
     _write_to_table(engine.cursor(), f"mcd.internal.TEST_DSPOT_PARAMS_STAGE",f"mcd.internal.TEST_DSPOT_PARAMS", pattern)
