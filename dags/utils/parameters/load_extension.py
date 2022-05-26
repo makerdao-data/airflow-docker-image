@@ -10,7 +10,7 @@ from dags.connectors.sf import _write_to_stage, _write_to_table, _clear_stage
 
 
 def new_flopper_params(engine: snowflake.connector.connection.SnowflakeConnection,
-                        chain: web3.main.Web3, setup: dict) -> pd.DataFrame:    
+                       chain: web3.main.Web3, setup: dict) -> pd.DataFrame:    
     """
     Function to fetch new Flopper parameters:
         - tau
@@ -43,7 +43,7 @@ def new_flopper_params(engine: snowflake.connector.connection.SnowflakeConnectio
 
 
 def new_flapper_params(engine: snowflake.connector.connection.SnowflakeConnection,
-                        chain: web3.main.Web3, setup: dict) -> pd.DataFrame:
+                       chain: web3.main.Web3, setup: dict) -> pd.DataFrame:
     """
     Function to fetch new Flapper parameters:
         - tau
@@ -69,7 +69,7 @@ def new_flapper_params(engine: snowflake.connector.connection.SnowflakeConnectio
 
 
 def new_esm_params(engine: snowflake.connector.connection.SnowflakeConnection,
-                    chain: web3.main.Web3, setup: dict) -> pd.DataFrame:  
+                   chain: web3.main.Web3, setup: dict) -> pd.DataFrame:  
     """
     Function to fetch new ESM parameters:
         - min
@@ -95,7 +95,7 @@ def new_esm_params(engine: snowflake.connector.connection.SnowflakeConnection,
 
 
 def new_psm_params(engine: snowflake.connector.connection.SnowflakeConnection, 
-                    chain: web3.main.Web3, setup: dict) -> pd.DataFrame:
+                   chain: web3.main.Web3, setup: dict) -> pd.DataFrame:
     """
     Function to fetch new PSM parameters:
         - tin
@@ -107,8 +107,8 @@ def new_psm_params(engine: snowflake.connector.connection.SnowflakeConnection,
     results = []
     # Iterate through contracts
     for contract in [('0x961ae24a1ceba861d1fdf723794f6024dc5485cf', 'PSM-USDP-A'), 
-                        ('0x89b78cfa322f6c5de0abceecab66aee45393cc5a', 'PSM-USDC-A'),
-                        ('0x204659b2fd2ad5723975c362ce2230fba11d3900', 'PSM-GUSD-A')]:
+                     ('0x89b78cfa322f6c5de0abceecab66aee45393cc5a', 'PSM-USDC-A'),
+                     ('0x204659b2fd2ad5723975c362ce2230fba11d3900', 'PSM-GUSD-A')]:
 
         # Fetch parameters
         query = f"""select block, timestamp, tx_hash, prev_value, curr_value, location
@@ -121,8 +121,8 @@ def new_psm_params(engine: snowflake.connector.connection.SnowflakeConnection,
 
         # Iterate through rows, format and populate values
         for i in range(len(result)):
-            result.at[i, 'PREV_VALUE'] = int(str(result.at[i, 'PREV_VALUE'])[:8], 16)
-            result.at[i, 'CURR_VALUE'] = int(str(result.at[i, 'CURR_VALUE'])[:8], 16)
+            result.at[i, 'PREV_VALUE'] = int(result.at[i, 'PREV_VALUE'], 16)
+            result.at[i, 'CURR_VALUE'] = int(result.at[i, 'CURR_VALUE'], 16)
             result.at[i, 'SOURCE'] = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
 
         # Add parameter column.
@@ -140,7 +140,7 @@ def new_psm_params(engine: snowflake.connector.connection.SnowflakeConnection,
 
 
 def new_dspause_params(engine: snowflake.connector.connection.SnowflakeConnection,
-                    chain: web3.main.Web3, setup: dict) -> pd.DataFrame:
+                   chain: web3.main.Web3, setup: dict) -> pd.DataFrame:
     """
     Function to fetch new DSPause parameters:
         - pause
@@ -154,7 +154,7 @@ def new_dspause_params(engine: snowflake.connector.connection.SnowflakeConnectio
                     and block > {setup['start_block']} and block <= {setup['end_block']}"""
     result = pd.read_sql(query, engine)
     result.replace('0x', '0x0', inplace=True)
-    
+
     # Iterate through columns, format and populate values
     for i in range(len(result)):
         result.at[i, 'PREV_VALUE'] = int(str(result.at[i, 'PREV_VALUE'])[:8], 16)
@@ -166,7 +166,7 @@ def new_dspause_params(engine: snowflake.connector.connection.SnowflakeConnectio
 
 
 def new_end_params(engine: snowflake.connector.connection.SnowflakeConnection,
-                        chain: web3.main.Web3, setup: dict) -> pd.DataFrame:
+                     chain: web3.main.Web3, setup: dict) -> pd.DataFrame:
     """
     Function to fetch new END parameters:
         - wait
