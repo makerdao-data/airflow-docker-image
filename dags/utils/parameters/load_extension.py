@@ -121,8 +121,8 @@ def new_psm_params(engine: snowflake.connector.connection.SnowflakeConnection,
 
         # Iterate through rows, format and populate values
         for i in range(len(result)):
-            result.at[i, 'PREV_VALUE'] = int(result.at[i, 'PREV_VALUE'], 16)
-            result.at[i, 'CURR_VALUE'] = int(result.at[i, 'CURR_VALUE'], 16)
+            result.at[i, 'PREV_VALUE'] = int(result.at[i, 'PREV_VALUE'], 16) * 1e-18)
+            result.at[i, 'CURR_VALUE'] = int(result.at[i, 'CURR_VALUE'], 16) * 1e-18)
             result.at[i, 'SOURCE'] = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
 
         # Add parameter column.
