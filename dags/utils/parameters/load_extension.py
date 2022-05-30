@@ -225,8 +225,7 @@ def get_new_params(engine: snowflake.connector.connection.SnowflakeConnection,
             continue
         
     # Adding source column if nonexistent
-    if 'SOURCE' not in concatenated:
-        concatenated['SOURCE'] = None
+    if 'SOURCE' not in concatenated: concatenated['SOURCE'] = None;
 
     return concatenated[['BLOCK','TIMESTAMP','TX_HASH','SOURCE','PARAMETER','ILK','PREV_VALUE','CURR_VALUE']]
 
