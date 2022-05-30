@@ -24,7 +24,7 @@ def update_table_history(sf):
     except Exception as e:
         raise AirflowFailException(e)
 
-    result = results[0] + results[1] + results[2] + results[3]
+    result = sum(results, [])
 
     try:
         sf.execute("delete from UTIL_DB.PUBLIC.TABLE_UPDATES")
