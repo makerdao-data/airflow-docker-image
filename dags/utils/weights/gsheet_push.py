@@ -31,7 +31,7 @@ def _gsheet_push():
             FROM delegates.public.delegates;
         """).fetchall():
 
-        delegates[vote_delegate] = dict(
+        delegates[vote_delegate.lower()] = dict(
             start_date=start_date,
             type=type,
             name=name
@@ -50,13 +50,14 @@ def _gsheet_push():
         name = None
 
         if vote_delegate in delegates:
+
+            type = delegates[vote_delegate]['type']
+            name = vote_delegate
+
             if delegates[vote_delegate]['start_date']:
                 if delegates[vote_delegate]['start_date'].__str__()[:10] <= eod:
-                    type = delegates[vote_delegate]['type']
+
                     name = delegates[vote_delegate]['name']
-            else:
-                type = delegates[vote_delegate]['type']
-                name = vote_delegate
         
         records.append([
             eod,

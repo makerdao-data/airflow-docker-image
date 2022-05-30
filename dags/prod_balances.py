@@ -5,7 +5,8 @@ import snowflake.connector
 sys.path.append('/opt/airflow/')
 
 from airflow.decorators import dag, task
-from dags.utils.balances.update_tkn_balances import update_token_balances
+from dags.utils.balances.dai import update_dai_balances
+from dags.utils.balances.mkr import update_mkr_balances
 
 # [START default_args]
 # These args will get passed on to each operator
@@ -19,39 +20,33 @@ default_args = {
 }
 # [END default_args]
 
-from config import SNOWFLAKE_CONNECTION
-
-SNOWFLAKE_CONNECTION['database'] = 'MAKER'
-SNOWFLAKE_CONNECTION['schema'] = 'BALANCES'
-
-conn = snowflake.connector.connect(**SNOWFLAKE_CONNECTION)
 
 # [START instantiate_dag]
 @dag(
     default_args=default_args,
-    schedule_interval='0 6 * * *',
-    start_date=datetime(2022, 3, 22, 10),
+    schedule_interval='30 2 * * *',
+    start_date=datetime(2022, 5, 30, 6),
     max_active_runs=1,
     catchup=False,
 )
 def prod_bals():
 
     @task()
-    def update_dai_balances():
+    def dai_balances():
 
-        update_token_balances('DAI', 10**-18, conn)
+        update_dai_balances()
 
         return
 
     @task()
-    def update_mkr_balances():
+    def mkr_balances():
 
-        update_token_balances('MKR', 10**-18, conn)
+        update_mkr_balances()
 
         return
 
-    update_dai_balances()
-    update_mkr_balances()
+    dai_balances()
+    mkr_balances()
 
 
 prod_bals = prod_bals()
