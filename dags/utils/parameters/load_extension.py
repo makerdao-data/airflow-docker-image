@@ -208,8 +208,8 @@ def get_new_params(engine: snowflake.connector.connection.SnowflakeConnection,
     # Formatting assurance
     concatenated = pd.concat([newesm, newpsm, newflop, newflap, newgsm, newpause], axis=0)
     concatenated.fillna(value=np.nan, inplace=True)
-    concatenated.PREV_VALUE = [int(i) if not math.isnan(i) else None for i in concatenated.PREV_VALUE]
-    concatenated.CURR_VALUE = [int(i) if not math.isnan(i) else None for i in concatenated.CURR_VALUE]
+    concatenated.PREV_VALUE = [float(i) if not math.isnan(i) else None for i in concatenated.PREV_VALUE]
+    concatenated.CURR_VALUE = [float(i) if not math.isnan(i) else None for i in concatenated.CURR_VALUE]
     concatenated.BLOCK = [int(i) for i in concatenated.BLOCK]
     # Why fillna just to replace with None? So the math.isnan comprehension covers all null values without erroring out. Quick fix.
     concatenated.replace({np.nan: None}, inplace=True) 
@@ -238,7 +238,6 @@ def upload_new_params(engine: snowflake.connector.connection.SnowflakeConnection
     """
     
     result = get_new_params(engine, chain, setup)
-    if not result.any()[0]: return;
     pattern = _write_to_stage(engine.cursor(), list(result.to_numpy()), f"mcd.internal.TEST_DSPOT_PARAMS_STAGE") 
     _write_to_table(engine.cursor(), f"mcd.internal.TEST_DSPOT_PARAMS_STAGE",f"mcd.internal.TEST_DSPOT_PARAMS", pattern)
     _clear_stage(engine.cursor(), f"mcd.internal.TEST_DSPOT_PARAMS_STAGE", pattern)
