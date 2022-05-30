@@ -1,8 +1,12 @@
 from datetime import datetime, timedelta
 from airflow.decorators import dag, task
 import os, sys
+
 sys.path.append('/opt/airflow/')
 
+from dags.utils.parameters.load_extension import upload_new_params
+from dags.connectors.sf import connection as engine
+from dags.connectors.chain import chain
 from dags.utils.parameters.setup import _setup
 from dags.utils.parameters.load import _load
 
@@ -42,9 +46,17 @@ def prod_parameters_load():
         _load(**setup)
 
         return
+    
+    @task()
+    def load_ext(setup):
+
+        upload_new_params(engine, chain, **setup)
+
+        return
 
     setup = setup()
-    load(setup, setup)
+    load_ext(setup)
+    # load(setup, setup)
 
 
 prod_parameters_load = prod_parameters_load()
