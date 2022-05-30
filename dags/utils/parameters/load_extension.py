@@ -224,7 +224,10 @@ def get_new_params(engine: snowflake.connector.connection.SnowflakeConnection,
         except:
             continue
         
-        
+    # Adding source column if nonexistent
+    if 'SOURCE' not in concatenated:
+        concatenated['SOURCE'] = None
+
     return concatenated[['BLOCK','TIMESTAMP','TX_HASH','SOURCE','PARAMETER','ILK','PREV_VALUE','CURR_VALUE']]
 
 
@@ -235,6 +238,7 @@ def upload_new_params(engine: snowflake.connector.connection.SnowflakeConnection
     """
     
     result = get_new_params(engine, chain, setup)
+    if not result.any()[0]: return;
     pattern = _write_to_stage(engine.cursor(), list(result.to_numpy()), f"mcd.internal.TEST_DSPOT_PARAMS_STAGE") 
     _write_to_table(engine.cursor(), f"mcd.internal.TEST_DSPOT_PARAMS_STAGE",f"mcd.internal.TEST_DSPOT_PARAMS", pattern)
     _clear_stage(engine.cursor(), f"mcd.internal.TEST_DSPOT_PARAMS_STAGE", pattern)
