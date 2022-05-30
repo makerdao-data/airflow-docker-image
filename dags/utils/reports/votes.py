@@ -59,8 +59,8 @@ def populate_vote_sheet(sheet: gspread.spreadsheet.Spreadsheet) -> None:
     ## Upload ##
     
     # Iterative uploading
-    for upload in ((1, 'execId', sheet.worksheet("executives"), execs)):
-                # Reintegrate after fix : (2, 'pollId', sheet.worksheet("polls"), polls)
+    for upload in ((2, 'pollId', sheet.worksheet("polls"), polls)):
+        # (1, 'execId', sheet.worksheet("executives"), execs)
 
         # Get list of stored values
         stored_vals = upload[2].col_values(upload[0])
