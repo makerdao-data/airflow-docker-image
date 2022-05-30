@@ -237,7 +237,7 @@ def upload_new_params(engine: snowflake.connector.connection.SnowflakeConnection
     """
     
     result = get_new_params(engine, chain, setup)
-    pattern = _write_to_stage(engine.cursor(), list(result.to_numpy()), f"mcd.internal.TEST_DSPOT_PARAMS_STAGE") 
-    _write_to_table(engine.cursor(), f"mcd.internal.TEST_DSPOT_PARAMS_STAGE",f"mcd.internal.TEST_DSPOT_PARAMS", pattern)
-    _clear_stage(engine.cursor(), f"mcd.internal.TEST_DSPOT_PARAMS_STAGE", pattern)
+    pattern = _write_to_stage(engine.cursor(), list(result.to_numpy()), f"MAKER.PUBLIC.PARAMETERS_STORAGE") 
+    _write_to_table(engine.cursor(), f"MAKER.PUBLIC.PARAMETERS_STORAGE",f"MAKER.PUBLIC.PARAMETERS", pattern)
+    _clear_stage(engine.cursor(), f"MAKER.PUBLIC.PARAMETERS_STORAGE", pattern)
     return
