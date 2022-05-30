@@ -56,7 +56,7 @@ def prod_parameters_load():
 
     setup = setup()
     load_ext(setup)
-    load(setup, setup)
+    # load(setup, setup)
 
 
 prod_parameters_load = prod_parameters_load()
