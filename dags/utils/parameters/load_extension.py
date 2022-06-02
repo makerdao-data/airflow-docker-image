@@ -14,7 +14,6 @@ def new_flopper_params(engine: snowflake.connector.connection.SnowflakeConnectio
     """
     Function to fetch new Flopper parameters:
         - tau
-
     Parameters:
         - engine
             - snowflake.connector.connection.SnowflakeConnection
@@ -36,7 +35,9 @@ def new_flopper_params(engine: snowflake.connector.connection.SnowflakeConnectio
     for i in range(len(result)):
         result.at[i, 'PREV_VALUE'] = int(result.at[i, 'PREV_VALUE'][:8], 16)
         result.at[i, 'CURR_VALUE'] = int(result.at[i, 'CURR_VALUE'][:8], 16)
-        result.at[i, 'SOURCE'] = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
+        src = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
+        src = src.lower() if src else src
+        result.at[i, 'SOURCE'] = src
 
     # Return DataFrame
     return result
@@ -62,7 +63,9 @@ def new_flapper_params(engine: snowflake.connector.connection.SnowflakeConnectio
     for i in range(len(result)):
         result.at[i, 'PREV_VALUE'] = int(str(result.at[i, 'PREV_VALUE'])[:8], 16)
         result.at[i, 'CURR_VALUE'] = int(str(result.at[i, 'CURR_VALUE'])[:8], 16)
-        result.at[i, 'SOURCE'] = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
+        src = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
+        src = src.lower() if src else src
+        result.at[i, 'SOURCE'] = src
 
     # Return DataFrame
     return result
@@ -88,7 +91,9 @@ def new_esm_params(engine: snowflake.connector.connection.SnowflakeConnection,
     for i in range(len(result)):
         result.at[i, 'PREV_VALUE'] = int(str(result.at[i, 'PREV_VALUE'])[:8], 16)
         result.at[i, 'CURR_VALUE'] = int(str(result.at[i, 'CURR_VALUE'])[:8], 16)
-        result.at[i, 'SOURCE'] = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
+        src = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
+        src = src.lower() if src else src
+        result.at[i, 'SOURCE'] = src
 
     # Return DataFrame
     return result
@@ -100,7 +105,6 @@ def new_psm_params(engine: snowflake.connector.connection.SnowflakeConnection,
     Function to fetch new PSM parameters:
         - tin
         - tout
-
     Will compress function.
     """
 
@@ -123,7 +127,9 @@ def new_psm_params(engine: snowflake.connector.connection.SnowflakeConnection,
         for i in range(len(result)):
             result.at[i, 'PREV_VALUE'] = (int(result.at[i, 'PREV_VALUE'], 16) / 10**18)
             result.at[i, 'CURR_VALUE'] = (int(result.at[i, 'CURR_VALUE'], 16) / 10**18)
-            result.at[i, 'SOURCE'] = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
+            src = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
+            src = src.lower() if src else src
+            result.at[i, 'SOURCE'] = src
 
         # Add parameter column.
         result['ILK'] = contract[1]
@@ -159,7 +165,9 @@ def new_dspause_params(engine: snowflake.connector.connection.SnowflakeConnectio
     for i in range(len(result)):
         result.at[i, 'PREV_VALUE'] = int(str(result.at[i, 'PREV_VALUE'])[:8], 16)
         result.at[i, 'CURR_VALUE'] = int(str(result.at[i, 'CURR_VALUE'])[:8], 16)
-        result.at[i, 'SOURCE'] = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
+        src = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
+        src = src.lower() if src else src
+        result.at[i, 'SOURCE'] = src
 
     # Return DataFrame
     return result
@@ -185,7 +193,9 @@ def new_end_params(engine: snowflake.connector.connection.SnowflakeConnection,
     for i in range(len(result)):
         result.at[i, 'PREV_VALUE'] = int(str(result.at[i, 'PREV_VALUE'])[:8], 16)
         result.at[i, 'CURR_VALUE'] = int(str(result.at[i, 'CURR_VALUE'])[:8], 16)
-        result.at[i, 'SOURCE'] = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
+        src = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
+        src = src.lower() if src else src
+        result.at[i, 'SOURCE'] = src
 
     # Return DataFrame
     return result
