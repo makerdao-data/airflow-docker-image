@@ -1,5 +1,7 @@
 import pandas as pd
+import numpy as np
 from typing import Dict
+from datetime import timedelta
 
 def fetch_data(engine) -> pd.DataFrame:
     """
@@ -38,7 +40,7 @@ def filter_data(grouped_df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
         for ilk in resampled_df['ILK'].unique():
             
             # Cumulatively sum fees
-            cumsum_series = round(operation[2](dfrs[dfrs['ILK'] == ilk]['FEES']), 2) 
+            cumsum_series = round(operation[2](resampled_df[resampled_df['ILK'] == ilk]['FEES']), 2) 
             resampled_df.loc[resampled_df.ILK == ilk, 'FEES'] = cumsum_series
             
             # If operation is for weekly data...
