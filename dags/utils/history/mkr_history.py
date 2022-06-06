@@ -92,7 +92,7 @@ def update_mkr_history(sf):
                 topic0 = '0xcc16f5dbb4873280815c1ee09dbd06736cffcc184412cf7a71a0fdb75d397ca5' and
                 block > {top_block} and
                 block <= {block_cap[0]} and
-                status;
+                status
         );"""
     )
 
