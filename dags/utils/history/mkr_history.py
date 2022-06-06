@@ -77,4 +77,23 @@ def update_mkr_history(sf):
         );"""
     )
 
+    # Burns
+    sf.execute(f"""
+        insert into maker.transfers.mkr(
+            select block, timestamp, tx_hash, call_id, 'MKR' as TOKEN,
+                'Burn' OPERATION,
+                concat('0x', lpad(ltrim(topic1, '0x'), 40, '0')) as SENDER,
+                '0x0000000000000000000000000000000000000000' as RECEIVER,
+                maker.public.big_int(log_data)::integer as raw_amount,
+                maker.public.big_int(log_data) / power(10,18) as amount,
+                order_index
+            from edw_share.raw.events
+            where contract = lower('0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2') and
+                topic0 = '0xcc16f5dbb4873280815c1ee09dbd06736cffcc184412cf7a71a0fdb75d397ca5' and
+                block > {top_block} and
+                block <= {block_cap[0]} and
+                status;
+        );"""
+    )
+
     return
