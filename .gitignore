@@ -135,3 +135,6 @@ serv_account.json
 # logs
 logs/
 
+dags/utils/.DS_Store
+dags/.DS_Store
+.DS_Store

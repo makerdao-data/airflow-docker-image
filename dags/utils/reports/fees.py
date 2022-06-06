@@ -1,5 +1,8 @@
 import pandas as pd
 import numpy as np
+from datetime import date, datetime, timedelta
+from gspread_dataframe import set_with_dataframe
+from gspread.spreadsheet import Worksheet
 from typing import Dict
 from datetime import timedelta
 
@@ -34,14 +37,14 @@ def filter_data(grouped_df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
         # Resample/reorg datafrane
         resampled_df = grouped_df.resample(operation[1], on='DAY').sum()
         resampled_df.reset_index(inplace=True)
-        resampled_df.sort_values(by='ILK', inplace=True)
+        resampled_df.sort_values(by='DAY', inplace=True)
         
         # Apply operations for each unique ILK
         for ilk in resampled_df['ILK'].unique():
             
-            # Cumulatively sum fees
-            cumsum_series = round(operation[2](resampled_df[resampled_df['ILK'] == ilk]['FEES']), 2) 
-            resampled_df.loc[resampled_df.ILK == ilk, 'FEES'] = cumsum_series
+            # Process fees
+            processed_series = round(operation[2](resampled_df[resampled_df['ILK'] == ilk]['FEES']), 2) 
+            resampled_df.loc[resampled_df.ILK == ilk, 'FEES'] = processed_series
             
             # If operation is for weekly data...
             if operation[0] == 'weekly':
@@ -63,8 +66,67 @@ def filter_data(grouped_df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
                 resampled_df.loc[resampled_df.ILK == ilk, 'END_OF_WEEK'] = week_end
                 resampled_df.loc[resampled_df.ILK == ilk, 'START_OF_WEEK'] = week_start
                 resampled_df.loc[resampled_df.ILK == ilk, 'WEEK_NUM'] = week_num
+                
+        # Drop DAY column in weekly gen
+        if operation[0] == 'weekly': resampled_df.drop(columns='DAY', inplace=True);
         
         # Store in result 
         res[operation[0]] = resampled_df
     
     return res
+
+
+def upload_data(dfs: Dict[str, pd.DataFrame], sheet: Worksheet) -> None:
+    """
+    Upload vote data. Could be abstracted into one loop. Will do later.
+    """
+    
+    wk = dfs['weekly']
+    mo = dfs['monthly']
+    
+    # Select sheet
+    weekly = sheet.worksheet("Weekly Fees Paid")
+    # Obtain END_OF_WEEK column
+    all_weeks = weekly.col_values(3)
+    # Get last date in column
+    last_week = datetime.strptime(all_weeks[-1], '%Y-%m-%d')
+    # Identiy insertion index
+    idx = len(all_weeks) + 1 
+    # Upload conditionals
+    cond = (wk.END_OF_WEEK > last_week.date()) & (wk.END_OF_WEEK < date.today())
+    # If dataframe w/ conditional applied is not empty
+    if not wk.loc[cond].empty:
+        # Upload weekly update
+        set_with_dataframe(weekly, wk.loc[cond], row=idx, include_column_header=False)
+    else:
+        print("No update needed.")
+    
+    # Select sheet
+    monthly = sheet.worksheet("Monthly Cumulative Fees")
+    # Obtain DAY column
+    all_months = monthly.col_values(2)
+    # Get last date in column
+    last_month = datetime.strptime(all_months[-1], '%Y-%m-%d')
+    # Identify insertion index
+    idx = len(all_months) + 1 
+    # Upload conditionals
+    cond = (mo.DAY > last_month) & (mo.DAY < datetime.now())
+    # If dataframe w/ conditional applied is not empty
+    if not mo.loc[cond].empty:
+        # Upload monthly update
+        set_with_dataframe(weekly, mo.loc[cond], row=idx, include_column_header=False)
+    else:
+        print("No update needed.")
+        
+    return
+
+def upload_wrapper(engine, gsheet) -> None:
+    """
+    Wrapper for performance FEE upload functions
+    """
+
+    fetched = fetch_data(engine)
+    filtered = filter_data(fetched)
+    _ = upload_data(filtered, gsheet)
+    
+    return
