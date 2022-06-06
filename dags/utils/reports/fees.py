@@ -66,9 +66,10 @@ def filter_data(grouped_df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
                 resampled_df.loc[resampled_df.ILK == ilk, 'END_OF_WEEK'] = week_end
                 resampled_df.loc[resampled_df.ILK == ilk, 'START_OF_WEEK'] = week_start
                 resampled_df.loc[resampled_df.ILK == ilk, 'WEEK_NUM'] = week_num
-                
+
         # Drop DAY column in weekly gen
-        if operation[0] == 'weekly': resampled_df.drop(columns='DAY', inplace=True);
+        if operation[0] == 'weekly': resampled_df.drop(columns='DAY', inplace=True)
+        else: resampled_df.DAY = resampled_df.DAY.dt.date
         
         # Store in result 
         res[operation[0]] = resampled_df
@@ -110,11 +111,11 @@ def upload_data(dfs: Dict[str, pd.DataFrame], sheet: Worksheet) -> None:
     # Identify insertion index
     idx = len(all_months) + 1 
     # Upload conditionals
-    cond = (mo.DAY > last_month) & (mo.DAY < datetime.now())
+    cond = (mo.DAY > last_month.date()) & (mo.DAY < date.today())
     # If dataframe w/ conditional applied is not empty
     if not mo.loc[cond].empty:
         # Upload monthly update
-        set_with_dataframe(weekly, mo.loc[cond], row=idx, include_column_header=False)
+        set_with_dataframe(monthly, mo.loc[cond], row=idx, include_column_header=False)
     else:
         print("No update needed.")
         
