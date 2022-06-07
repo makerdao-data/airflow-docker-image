@@ -36,7 +36,7 @@ def prod_clean():
     @provide_session
     def clean_xcoms(session=None):
         
-        ts_limit = datetime.now(timezone.utc) - timedelta(days=1)
+        ts_limit = datetime.now(timezone.utc) - timedelta(hours=1)
         session.query(XCom).filter(XCom.execution_date <= ts_limit).delete()
 
         return
