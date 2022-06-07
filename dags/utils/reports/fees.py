@@ -81,43 +81,27 @@ def upload_data(dfs: Dict[str, pd.DataFrame], sheet: Worksheet) -> None:
     """
     Upload vote data. Could be abstracted into one loop. Will do later.
     """
-    
-    wk = dfs['weekly']
-    mo = dfs['monthly']
-    
-    # Select sheet
-    weekly = sheet.worksheet("Weekly Fees Paid")
-    # Obtain END_OF_WEEK column
-    all_weeks = weekly.col_values(3)
-    # Get last date in column
-    last_week = datetime.strptime(all_weeks[-1], '%Y-%m-%d')
-    # Identiy insertion index
-    idx = len(all_weeks) + 1 
-    # Upload conditionals
-    cond = (wk.END_OF_WEEK > last_week.date()) & (wk.END_OF_WEEK < date.today())
-    # If dataframe w/ conditional applied is not empty
-    if not wk.loc[cond].empty:
-        # Upload weekly update
-        set_with_dataframe(weekly, wk.loc[cond], row=idx, include_column_header=False)
-    else:
-        print("No update needed.")
-    
-    # Select sheet
-    monthly = sheet.worksheet("Monthly Cumulative Fees")
-    # Obtain DAY column
-    all_months = monthly.col_values(2)
-    # Get last date in column
-    last_month = datetime.strptime(all_months[-1], '%Y-%m-%d')
-    # Identify insertion index
-    idx = len(all_months) + 1 
-    # Upload conditionals
-    cond = (mo.DAY > last_month.date()) & (mo.DAY < date.today())
-    # If dataframe w/ conditional applied is not empty
-    if not mo.loc[cond].empty:
-        # Upload monthly update
-        set_with_dataframe(monthly, mo.loc[cond], row=idx, include_column_header=False)
-    else:
-        print("No update needed.")
+
+    # Iterative uploading
+    for upload in [("Weekly Fees Paid", 3, dfs['weekly'], 'END_OF_WEEK'),
+                    ("Monthly Cumulative Fees", 2, dfs['monthly'], 'DAY')]:
+
+        # Select sheet
+        worksheet = sheet.worksheet(upload[0])
+        # Obtain date column
+        all_dates = worksheet.col_values(upload[1])
+        # Get last date in column
+        last_date = datetime.strptime(all_dates[-1], '%Y-%m-%d')
+        # Identiy insertion index
+        idx = len(all_dates) + 1 
+        # Upload conditionals
+        cond = (upload[2][upload[3]] > last_date.date()) & (upload[2][upload[3]] < date.today())
+        # If dataframe w/ conditional applied is not empty
+        if not upload[2].loc[cond].empty:
+            # Upload weekly update
+            set_with_dataframe(worksheet, upload[2].loc[cond], row=idx, include_column_header=False)
+        else:
+            print("No update needed.")
         
     return
 
