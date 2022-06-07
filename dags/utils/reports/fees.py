@@ -57,7 +57,7 @@ def filter_data(grouped_df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
                 # Obtain end of week, start of week and week number for days
                 for date_obj in resampled_df.loc[resampled_df.ILK == ilk, 'DAY']:
                     sow = date_obj - timedelta(days=date_obj.weekday())
-                    eow = sow + timedelta(days=6)
+                    eow = sow + timedelta(days=7)
                     week_start.append(sow.date())
                     week_end.append(eow.date())
                     week_num.append(date_obj.isocalendar()[1])
