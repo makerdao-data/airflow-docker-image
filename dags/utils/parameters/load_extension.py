@@ -36,8 +36,7 @@ def new_flopper_params(engine: snowflake.connector.connection.SnowflakeConnectio
         result.at[i, 'PREV_VALUE'] = int(result.at[i, 'PREV_VALUE'][:8], 16)
         result.at[i, 'CURR_VALUE'] = int(result.at[i, 'CURR_VALUE'][:8], 16)
         src = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
-        src = src.lower() if src else src
-        result.at[i, 'SOURCE'] = src
+        result.at[i, 'SOURCE'] = src.lower()
 
     # Return DataFrame
     return result
@@ -64,8 +63,7 @@ def new_flapper_params(engine: snowflake.connector.connection.SnowflakeConnectio
         result.at[i, 'PREV_VALUE'] = int(str(result.at[i, 'PREV_VALUE'])[:8], 16)
         result.at[i, 'CURR_VALUE'] = int(str(result.at[i, 'CURR_VALUE'])[:8], 16)
         src = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
-        src = src.lower() if src else src
-        result.at[i, 'SOURCE'] = src
+        result.at[i, 'SOURCE'] = src.lower()
 
     # Return DataFrame
     return result
@@ -92,8 +90,7 @@ def new_esm_params(engine: snowflake.connector.connection.SnowflakeConnection,
         result.at[i, 'PREV_VALUE'] = int(str(result.at[i, 'PREV_VALUE'])[:8], 16)
         result.at[i, 'CURR_VALUE'] = int(str(result.at[i, 'CURR_VALUE'])[:8], 16)
         src = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
-        src = src.lower() if src else src
-        result.at[i, 'SOURCE'] = src
+        result.at[i, 'SOURCE'] = src.lower()
 
     # Return DataFrame
     return result
@@ -128,8 +125,7 @@ def new_psm_params(engine: snowflake.connector.connection.SnowflakeConnection,
             result.at[i, 'PREV_VALUE'] = (int(result.at[i, 'PREV_VALUE'], 16) / 10**18)
             result.at[i, 'CURR_VALUE'] = (int(result.at[i, 'CURR_VALUE'], 16) / 10**18)
             src = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
-            src = src.lower() if src else src
-            result.at[i, 'SOURCE'] = src
+            result.at[i, 'SOURCE'] = src.lower()
 
         # Add parameter column.
         result['ILK'] = contract[1]
@@ -166,8 +162,7 @@ def new_dspause_params(engine: snowflake.connector.connection.SnowflakeConnectio
         result.at[i, 'PREV_VALUE'] = int(str(result.at[i, 'PREV_VALUE'])[:8], 16)
         result.at[i, 'CURR_VALUE'] = int(str(result.at[i, 'CURR_VALUE'])[:8], 16)
         src = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
-        src = src.lower() if src else src
-        result.at[i, 'SOURCE'] = src
+        result.at[i, 'SOURCE'] = src.lower()
 
     # Return DataFrame
     return result
@@ -194,8 +189,7 @@ def new_end_params(engine: snowflake.connector.connection.SnowflakeConnection,
         result.at[i, 'PREV_VALUE'] = int(str(result.at[i, 'PREV_VALUE'])[:8], 16)
         result.at[i, 'CURR_VALUE'] = int(str(result.at[i, 'CURR_VALUE'])[:8], 16)
         src = chain.eth.get_transaction(result.at[i, 'TX_HASH'])['to']
-        src = src.lower() if src else src
-        result.at[i, 'SOURCE'] = src
+        result.at[i, 'SOURCE'] = src.lower()
 
     # Return DataFrame
     return result
