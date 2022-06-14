@@ -12,7 +12,7 @@ def fetch_data(engine) -> pd.DataFrame:
     """
 
     # Fetch fee data
-    work_df = pd.read_sql("select DAY, ILK, FEES from MAKER.HISTORY.VAULTS", engine)
+    work_df = pd.read_sql("select DAY, ILK, FEES from MAKER.HISTORY.VAULTS where DAY > DATEADD(month, -2, GETDATE())", engine)
     
     # Convert DAY column from string to datetime
     work_df['DAY'] = pd.to_datetime(work_df['DAY'])
