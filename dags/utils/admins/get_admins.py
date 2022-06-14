@@ -1,9 +1,8 @@
 from web3 import Web3
 import sys
 sys.path.append('/opt/airflow/')
-from dags.connectors.sf import connection, _write_to_stage, _write_to_table, _clear_stage
+from dags.connectors.sf import sf, _write_to_stage, _write_to_table, _clear_stage
 from dags.connectors.chain import chain
-import pandas as pd
 from datetime import datetime
 
 
@@ -25,10 +24,10 @@ def _get_admins():
     if end_block > start_block:
 
         all_managers_dict = dict()
- 
+
         # CDP Manager
         # 2 urn / 4 ds proxy -- exclude 0xddb108893104de4e1c6d0e47c42237db4e617acc (Maker Deployer contract)  / 5 ilk
-        cdpmanager = pd.read_sql(f"""
+        cdpmanager = sf.execute(f"""
             select distinct substr(location, 0, 1) loc, substr(location, 3, length(location) - 5) as id, curr_value as vault_param
             from edw_share.raw.storage_diffs
             where block > {start_block} and block <= {end_block} and
@@ -36,7 +35,8 @@ def _get_admins():
                 (location like '2[%].0' or location like '4[%].0' or location like '5[%].0') and
                 status
             order by id, loc;
-        """, connection).fetchall()
+        """).fetchall()
+
 
 
         for loc, id, vault_param in cdpmanager:
