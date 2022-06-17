@@ -10,6 +10,7 @@ from dags.utils.weights.gsheet_push import _gsheet_push
 from dags.connectors.sf import _write_to_stage, _write_to_table, _clear_stage
 from dags.utils.weights.update_delegates import _update_delegates
 from dags.utils.weights.gsheet_push import _gsheet_push
+from dags.utils.weights.snowflake_push import _snowflake_push
 
 
 # [START default_args]
@@ -90,6 +91,7 @@ def prod_weights_load():
                     )
                     _clear_stage(sf, "delegates.public.extracts", pattern)
                 
+                _snowflake_push()
                 _gsheet_push()
 
             sf.execute(f"""

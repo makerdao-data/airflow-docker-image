@@ -67,18 +67,20 @@ def _update_delegates():
             start_dates[title.lower()] = start_date[:10] + ' 00:00:00'
 
     delegates_current = sf.execute(f"""
-        select vote_delegate
+        select vote_delegate, start_date
         from delegates.public.delegates
-        where start_date is null
-            and vote_delegate in {tuple(start_dates.keys())};
+        where vote_delegate in {tuple(start_dates.keys())};
     """).fetchall()
 
-    for vote_delegate in delegates_current:
-
-        sf.execute(f"""
-            UPDATE delegates.public.delegates
-            SET start_date = '{start_dates[vote_delegate[0].lower()]}'
-            WHERE vote_delegate = '{vote_delegate[0]}';
-        """)
+    # loop through delegates that start_date value was pulled from github
+    for vote_delegate, start_date in delegates_current:
+        
+        # if the start_date changed, update it in DB
+        if start_date != start_dates[vote_delegate.lower()]:
+            sf.execute(f"""
+                UPDATE delegates.public.delegates
+                SET start_date = '{start_dates[vote_delegate.lower()]}'
+                WHERE vote_delegate = '{vote_delegate}';
+            """)
 
     return
