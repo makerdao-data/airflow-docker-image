@@ -25,40 +25,15 @@ def _gsheet_push():
     request = service.spreadsheets().values().get(spreadsheetId=SPREADSHEET_ID, range=range_notation)
     response = request.execute()
 
-    delegates = dict()
-    for vote_delegate, start_date, type, name in sf.execute(f"""
-            SELECT vote_delegate, start_date, type, name
-            FROM delegates.public.delegates;
-        """).fetchall():
-
-        delegates[vote_delegate.lower()] = dict(
-            start_date=start_date,
-            type=type,
-            name=name
-        )
-
     records = list()
 
-    for eod, weight, vote_delegate in sf.execute(f"""
-            SELECT to_varchar(p.eod::date) as eod, p.balance as weight, p.vote_delegate
-            FROM delegates.public.power p
+    for eod, weight, type, name in sf.execute(f"""
+            SELECT to_varchar(eod::date) as eod, support as weight, type, delegate
+            FROM delegates.public.support
             WHERE eod > '{response['values'][-1][0]}'
             ORDER BY eod;
         """).fetchall():
 
-        type = None
-        name = None
-
-        if vote_delegate in delegates:
-
-            type = delegates[vote_delegate]['type']
-            name = vote_delegate
-
-            if delegates[vote_delegate]['start_date']:
-                if delegates[vote_delegate]['start_date'].__str__()[:10] <= eod:
-
-                    name = delegates[vote_delegate]['name']
-        
         records.append([
             eod,
             type,
