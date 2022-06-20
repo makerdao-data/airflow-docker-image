@@ -54,8 +54,8 @@ def populate_vote_sheet(sheet: gspread.spreadsheet.Spreadsheet) -> None:
     
     # Store as dataframe and sort by id
     polls = pd.DataFrame(res['polls'])    
-    polls.sort_values(by='pollId', inplace=True)
-    
+    polls = polls.sort_values(by='pollId').drop(columns='cursor')
+
     ## Upload ##
     
     # Iterative uploading
