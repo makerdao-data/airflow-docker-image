@@ -1,3 +1,4 @@
+from distutils.command.upload import upload
 import sys
 from datetime import datetime, timedelta
 
@@ -5,8 +6,9 @@ sys.path.append('/opt/airflow/')
 
 from airflow.decorators import dag, task
 from dags.connectors.gsheets import gclient
-from dags.connectors.sf import sf
+from dags.connectors.sf import sf, connection
 from dags.utils.reports.growth_reports.kpis import growth_report_updater
+from dags.utils.reports.fees import upload_wrapper
 from dags.utils.reports.votes import populate_vote_sheet
 
 
@@ -35,7 +37,6 @@ def daily_reports():
 
     @task()
     def update_growth_report():
-
         growth_report_updater(sf, gclient)
 
         return
@@ -47,7 +48,19 @@ def daily_reports():
                 'https://docs.google.com/spreadsheets/d/1MkC0GILLWaRUEKU1hz6nKft21uyZATTreAVxg5x3hkU/'
             )
         )
+        return
 
+    @task()
+    def update_perf_fees():
+        upload_wrapper(
+            connection,
+            gclient.open_by_url(
+                'https://docs.google.com/spreadsheets/d/185Xsy_nx3bAr9OalUwvniuBNoFXQQarSC8b-my1ZYF8/edit#gid=304123321'
+            )
+        )
+        return
+
+    update_perf_fees()
     update_vote_sheet()
     update_growth_report()
 

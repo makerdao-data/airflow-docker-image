@@ -60,6 +60,7 @@ def _conduct_analyses(vaults_df: pd.DataFrame) -> Tuple[pd.DataFrame]:
     """
     Conduct growth report analyses
     """
+    
     # Analysis 1 (Dai distribution & available debt)
     df = vaults_df[vaults_df['PRINCIPAL'] > 10]
     df.loc[:, 'AVAILABLE_DEBT_PERCENT'] = df['AVAILABLE_DEBT'] / (
