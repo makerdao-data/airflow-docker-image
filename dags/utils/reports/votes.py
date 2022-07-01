@@ -15,7 +15,7 @@ def populate_vote_sheet(sheet: gspread.spreadsheet.Spreadsheet) -> None:
     url = "https://vote.makerdao.com/api/executive?network=mainnet"
     executives = requests.get(url).json()
     # Instantiate worksheet object and fetch exec titles
-    exec_ws = sheet.worksheet("execs")
+    exec_ws = sheet.worksheet("executives")
     exec_ws_titles = exec_ws.col_values(1)[1:]
     # Isolate needed fields from list of executives
     pre_df = []

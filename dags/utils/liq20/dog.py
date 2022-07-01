@@ -18,7 +18,7 @@ from dags.utils.bq_adapters import decode_calls
 from dags.connectors.sf import sf, _write_to_stage, _write_to_table, _clear_stage
 
 
-def get_dog_calls(load_id, start_block, end_block, start_time, end_time, DB, STAGING):
+def get_dog_calls(**setup):
 
     currentdir = os.path.dirname(os.path.realpath(__file__))
     parentdir = os.path.dirname(currentdir)
@@ -27,32 +27,33 @@ def get_dog_calls(load_id, start_block, end_block, start_time, end_time, DB, STA
     with open(path + 'dog.json', 'r') as f:
         abi = json.load(f)
 
-    if start_block > end_block:
+    if setup['start_block'] > setup['end_block']:
 
         dog_calls = []
         
     else:
+
         dog_calls = decode_calls(
             ('0x135954d155898D42C90D2a57824C690e0c7BEf1B'.lower(),),
             abi,
-            load_id,
-            start_block,
-            end_block,
-            start_time,
-            end_time,
+            setup['load_id'],
+            setup['start_block'],
+            setup['end_block'],
+            setup['start_time'],
+            setup['end_time'],
         )
 
         if len(dog_calls) > 0:
             
-            pattern = _write_to_stage(sf, dog_calls, f"{DB}.staging.liquidations_extracts")
+            pattern = _write_to_stage(sf, dog_calls, f"{setup['STAGING']}")
             if pattern:
                 _write_to_table(
                     sf,
-                    f"{DB}.staging.liquidations_extracts",
-                    f"{DB}.staging.dog",
+                    f"{setup['STAGING']}",
+                    f"{setup['DB']}.staging.dog",
                     pattern,
                 )
-                _clear_stage(sf, f"{DB}.staging.liquidations_extracts", pattern)
+                _clear_stage(sf, f"{setup['STAGING']}", pattern)
 
         print(f'{len(dog_calls)} rows loaded')
 

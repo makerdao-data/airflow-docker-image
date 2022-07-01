@@ -17,6 +17,7 @@ sys.path.append('/opt/airflow/')
 from dags.connectors.sf import sf, sf_dict
 
 
+
 def update_round_num(sf, id, ilk, round_num, DB):
 
     q = f"""UPDATE {DB}.internal.action
@@ -29,32 +30,33 @@ def update_round_num(sf, id, ilk, round_num, DB):
     return x
 
 
-def rounds_auctions(load_id, start_block, end_block, start_time, end_time, DB, STAGING):
+def rounds_auctions(load_id, DB):
 
     initial = sf.execute(
         f"""select id, block
-                            from {DB}.internal.action
-                            where
-                                round is null
-                                and status = 1
-                            order by block, id
-                            limit 1; """
+            from {DB}.internal.action
+            where
+                round is null
+                and status = 1
+            order by block, id
+            limit 1; """
     ).fetchone()
 
     if initial:
 
         actions = sf_dict.execute(
             f"""select *
-                                    from {DB}.internal.action
-                                    where
-                                        type in ('kick', 'redo', 'take')
-                                        and status = 1
-                                        and id >= {initial[0]}
-                                        and block >= {initial[1]}
-                                    order by block, id; """
+                from {DB}.internal.action
+                where
+                    type in ('kick', 'redo', 'take')
+                    and status = 1
+                    and id >= {initial[0]}
+                    and block >= {initial[1]}
+                order by block, id; """
         ).fetchall()
 
         if actions:
+
             for a in actions:
 
                 # kick
@@ -63,7 +65,8 @@ def rounds_auctions(load_id, start_block, end_block, start_time, end_time, DB, S
                     q = f"""select *
                         from {DB}.internal.bark
                         where auction_id = {a['AUCTION_ID']}
-                        and ilk = '{a['ILK']}'; """
+                            and ilk = '{a['ILK']}';
+                    """
 
                     bark = sf_dict.execute(q).fetchone()
 
@@ -71,24 +74,25 @@ def rounds_auctions(load_id, start_block, end_block, start_time, end_time, DB, S
                     action_start = datetime.strftime(a['TIMESTAMP'], '%Y-%m-%d %H:%S:%M')
                     round_num = 1
 
-                    sf.execute(
-                        f"""INSERT INTO {DB}.internal.auction(load_id, auction_id, auction_start, vault,
-                                                                    ilk, urn, owner, debt, available_collateral,
-                                                                    penalty, round, finished)
-                                    VALUES ('{load_id}', {a['AUCTION_ID']}, '{action_start}', '{bark['VAULT']}',
-                                            '{bark['ILK']}', '{a['URN']}', '{bark['OWNER']}', {a['DEBT']},
-                                            {a['AVAILABLE_COLLATERAL']}, {bark['PENALTY']}, {round_num}, 0); """.replace(
-                            'None', 'NULL'
-                        )
-                    )
+                    sf.execute(f"""
+                        INSERT INTO {DB}.internal.auction(
+                            load_id, auction_id, auction_start, vault,
+                            ilk, urn, owner, debt, available_collateral,
+                            penalty, round, finished)
+                        VALUES ('{load_id}', {a['AUCTION_ID']}, '{action_start}', '{bark['VAULT']}',
+                                '{bark['ILK']}', '{a['URN']}', '{bark['OWNER']}', {a['DEBT']},
+                                {a['AVAILABLE_COLLATERAL']}, {bark['PENALTY']}, {round_num}, 0);
+                    """.replace('None', 'NULL'))
 
                     # create #1 ROUND
-                    sf.execute(
-                        f"""INSERT INTO {DB}.internal.round(load_id, auction_id, round, round_start, initial_price,
-                                                                    debt, available_collateral, keeper, incentives, finished, ilk)
-                                    VALUES ('{load_id}', {a['AUCTION_ID']}, {round_num}, '{a['TIMESTAMP']}', {a['INIT_PRICE']},
-                                            {a['DEBT']}, {a['AVAILABLE_COLLATERAL']}, '{a['KEEPER']}', '{a['INCENTIVES']}', 0, '{a['ILK']}'); """
-                    )
+                    sf.execute(f"""
+                        INSERT INTO {DB}.internal.round(
+                            load_id, auction_id, round, round_start, initial_price,
+                            debt, available_collateral, keeper, incentives, finished, ilk)
+                        VALUES ('{load_id}', {a['AUCTION_ID']}, {round_num}, '{a['TIMESTAMP']}',
+                                {a['INIT_PRICE']}, {a['DEBT']}, {a['AVAILABLE_COLLATERAL']},
+                                '{a['KEEPER']}', '{a['INCENTIVES']}', 0, '{a['ILK']}');
+                    """)
 
                     # update liq_actions with round_num
                     update_round_num(sf, a['ID'], a['ILK'], round_num, DB)
@@ -98,9 +102,9 @@ def rounds_auctions(load_id, start_block, end_block, start_time, end_time, DB, S
 
                     round_num = sf.execute(
                         f"""SELECT max(round)
-                                                FROM {DB}.internal.round
-                                                WHERE auction_id = {a['AUCTION_ID']}
-                                                    AND ilk = '{a['ILK']}'; """
+                            FROM {DB}.internal.round
+                            WHERE auction_id = {a['AUCTION_ID']}
+                                AND ilk = '{a['ILK']}'; """
                     ).fetchone()[0]
 
                     q = f"""SELECT sold_collateral, recovered_debt
@@ -114,67 +118,67 @@ def rounds_auctions(load_id, start_block, end_block, start_time, end_time, DB, S
                     sold_collateral = (record[0] if record[0] else 0) + (
                         a['SOLD_COLLATERAL'] if a['SOLD_COLLATERAL'] else 0
                     )
+
                     recovered_debt = (record[1] if record[1] else 0) + (
                         a['RECOVERED_DEBT'] if a['RECOVERED_DEBT'] else 0
                     )
 
-                    if a['CLOSING_TAKE'] == 1:
+                    if a['CLOSING_TAKE'] == 1 or {a['AVAILABLE_COLLATERAL']} == 0:
 
-                        sf.execute(
-                            f"""UPDATE {DB}.internal.auction
-                                        SET finished = {int(a['CLOSING_TAKE'])},
-                                            auction_end = '{a['TIMESTAMP']}',
-                                            available_collateral = {a['AVAILABLE_COLLATERAL']},
-                                            debt = {a['DEBT']},
-                                            sold_collateral = {sold_collateral},
-                                            recovered_debt = {recovered_debt}
-                                        WHERE auction_id = {a['AUCTION_ID']} AND
-                                            ilk = '{a['ILK']}'; """
-                        )
+                        sf.execute(f"""
+                            UPDATE {DB}.internal.auction
+                            SET finished = {int(a['CLOSING_TAKE'])},
+                                auction_end = '{a['TIMESTAMP']}',
+                                available_collateral = {a['AVAILABLE_COLLATERAL']},
+                                debt = {a['DEBT']},
+                                sold_collateral = {sold_collateral},
+                                recovered_debt = {recovered_debt}
+                            WHERE auction_id = {a['AUCTION_ID']} AND
+                                ilk = '{a['ILK']}'; """)
 
                     else:
 
                         q = f"""UPDATE {DB}.internal.auction
-                                        SET finished = {int(a['CLOSING_TAKE'])},
-                                            available_collateral = {a['AVAILABLE_COLLATERAL']},
-                                            debt = {a['DEBT']},
-                                            sold_collateral = {sold_collateral},
-                                            recovered_debt = {recovered_debt}
-                                        WHERE auction_id = {a['AUCTION_ID']} AND
-                                            ilk = '{a['ILK']}'; """
+                                SET finished = {int(a['CLOSING_TAKE'])},
+                                    available_collateral = {a['AVAILABLE_COLLATERAL']},
+                                    debt = {a['DEBT']},
+                                    sold_collateral = {sold_collateral},
+                                    recovered_debt = {recovered_debt}
+                                WHERE auction_id = {a['AUCTION_ID']} AND
+                                    ilk = '{a['ILK']}'; """
 
                         sf.execute(q)
 
-                    if a['CLOSING_TAKE'] == 1:
+                    if a['CLOSING_TAKE'] == 1 or {a['AVAILABLE_COLLATERAL']} == 0:
 
-                        sf.execute(
-                            f"""UPDATE {DB}.internal.round
-                                        SET finished = {int(a['CLOSING_TAKE'])},
-                                            round_end = '{a['TIMESTAMP']}',
-                                            end_price = {a['COLLATERAL_PRICE']},
-                                            available_collateral = {a['AVAILABLE_COLLATERAL']},
-                                            debt = {a['DEBT']},
-                                            sold_collateral = {sold_collateral},
-                                            recovered_debt = {recovered_debt}
-                                        WHERE auction_id = {a['AUCTION_ID']} AND
-                                            ilk = '{a['ILK']}' AND
-                                            round = {round_num}; """
-                        )
+                        sf.execute(f"""
+                            UPDATE {DB}.internal.round
+                            SET finished = 1,
+                                round_end = '{a['TIMESTAMP']}',
+                                end_price = {a['COLLATERAL_PRICE']},
+                                available_collateral = {a['AVAILABLE_COLLATERAL']},
+                                debt = {a['DEBT']},
+                                sold_collateral = {sold_collateral},
+                                recovered_debt = {recovered_debt}
+                            WHERE auction_id = {a['AUCTION_ID']} AND
+                                ilk = '{a['ILK']}' AND
+                                round = {round_num};
+                        """)
 
                     else:
 
-                        sf.execute(
-                            f"""UPDATE {DB}.internal.round
-                                        SET finished = {int(a['CLOSING_TAKE'])},
-                                            end_price = {a['COLLATERAL_PRICE']},
-                                            available_collateral = {a['AVAILABLE_COLLATERAL']},
-                                            debt = {a['DEBT']},
-                                            sold_collateral = {sold_collateral},
-                                            recovered_debt = {recovered_debt}
-                                        WHERE auction_id = {a['AUCTION_ID']} AND
-                                            ilk = '{a['ILK']}' AND
-                                            round = {round_num}; """
-                        )
+                        sf.execute(f"""
+                            UPDATE {DB}.internal.round
+                            SET finished = {int(a['CLOSING_TAKE'])},
+                                end_price = {a['COLLATERAL_PRICE']},
+                                available_collateral = {a['AVAILABLE_COLLATERAL']},
+                                debt = {a['DEBT']},
+                                sold_collateral = {sold_collateral},
+                                recovered_debt = {recovered_debt}
+                            WHERE auction_id = {a['AUCTION_ID']} AND
+                                ilk = '{a['ILK']}' AND
+                                round = {round_num};
+                        """)
 
                     # update liq_actions with round_num
                     update_round_num(sf, a['ID'], a['ILK'], round_num, DB)
@@ -193,12 +197,14 @@ def rounds_auctions(load_id, start_block, end_block, start_time, end_time, DB, S
                         round_num = last_round + 1
 
                     # create NEW ROUND
-                    sf.execute(
-                        f"""INSERT INTO {DB}.internal.round (load_id, auction_id, round, round_start, initial_price,
-                                                                    debt, available_collateral, keeper, incentives, finished, ilk)
-                                    VALUES ('{load_id}', {a['AUCTION_ID']}, {round_num}, '{a['TIMESTAMP']}', {a['INIT_PRICE']},
-                                            {a['DEBT']}, {a['AVAILABLE_COLLATERAL']}, '{a['KEEPER']}', '{a['INCENTIVES']}', 0, '{a['ILK']}'); """
-                    )
+                    sf.execute(f"""
+                        INSERT INTO {DB}.internal.round(
+                            load_id, auction_id, round, round_start, initial_price,
+                            debt, available_collateral, keeper, incentives, finished, ilk)
+                        VALUES ('{load_id}', {a['AUCTION_ID']}, {round_num}, '{a['TIMESTAMP']}',
+                                {a['INIT_PRICE']}, {a['DEBT']}, {a['AVAILABLE_COLLATERAL']},
+                                '{a['KEEPER']}', '{a['INCENTIVES']}', 0, '{a['ILK']}');
+                        """)
 
                     # update liq_actions with round_num
                     update_round_num(sf, a['ID'], a['ILK'], round_num, DB)

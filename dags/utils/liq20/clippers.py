@@ -10,45 +10,29 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import requests
-import json
 from web3 import Web3
 from airflow.exceptions import AirflowFailException
 import os, sys
 
 sys.path.append('/opt/airflow/')
 from dags.connectors.chain import chain
-from dags.connectors.sf import sf
+from dags.connectors.sf import sf, _write_to_stage, _write_to_table, _clear_stage
+from dags.utils.general import breadcrumb
 
 
-def get_changelog():
+def update_clippers(**setup):
 
-    r = requests.get('https://changelog.makerdao.com/releases/mainnet/active/contracts.json')
-    if r.status_code == 200:
-        changelog = json.loads(r.text)
-    else:
-        changelog = None
+    created_clippers = sf.execute(f"""
+        select block, timestamp, tx_hash, call_id, call_data::varchar as call_data, concat('0x', lpad(ltrim(lower(return_value), '0x'), 40, '0')) as return_value, order_index
+        from edw_share.raw.calls
+        where to_address = lower('0x0716F25fBaAae9b63803917b6125c10c313dF663')
+        and left(call_data, 10) = '0xbf5f804e'
+        and block >= {setup['start_block']}
+        and block <= {setup['end_block']}
+        and status;
+    """).fetchall()
 
-    return changelog
-
-
-def get_clippers(DB=None):
-
-    c = sf.execute(
-        f"""select ilk
-                    from {DB}.internal.clipper; """
-    ).fetchall()
-
-    clippers = []
-    for i in c:
-        clippers.append(i[0])
-
-    return clippers
-
-
-def update_clippers(DB=None, load_id=None):
-
-    clippers = get_clippers(DB)
+    c = list()
 
     clip_abi = [
         {
@@ -67,26 +51,31 @@ def update_clippers(DB=None, load_id=None):
         },
     ]
 
-    changelog = get_changelog()
-    if changelog:
-        for i in changelog:
-            if '_CLIP_' in i and '_CALC_' not in i:
-                Clip = chain.eth.contract(address=Web3.toChecksumAddress(changelog[i]), abi=clip_abi)
-                ilk = Clip.functions.ilk().call().decode('utf-8').rstrip("\x00")
-                clip = changelog[i]
-                calc = Clip.functions.calc().call()
 
-                if ilk not in clippers:
+    for block, timestamp, tx_hash, call_id, call_data, return_value, order_index in created_clippers:
 
-                    try:
-                        sf.execute(
-                            f"""INSERT INTO {DB}.internal.clipper(load_id, ilk, clip, calc)
-                                        VALUES ('{load_id}', '{ilk}', '{clip.lower()}', '{calc.lower()}');"""
-                        )
-                    except Exception as e:
-                        print(e)
-                        raise AirflowFailException("#ERROR ON ADDING NEW CLIPPER")
-    else:
-        raise AirflowFailException("#ERROR: CHANGELOG UNAVAILABLE")
+        Clip = chain.eth.contract(address=Web3.toChecksumAddress(return_value), abi=clip_abi)
+        calc = Clip.functions.calc().call(block_identifier=block)
 
-    return True
+        c.append([
+            block,
+            timestamp,
+            tx_hash,
+            breadcrumb(call_id),
+            return_value.lower(), # clipper
+            Web3.toText(call_data[266:]).rstrip('\x00'), # ilk
+            calc.lower(),
+            order_index
+        ])
+
+    pattern = None
+    if c:
+        pattern = _write_to_stage(sf, c, f"{setup['STAGING']}")
+
+        _write_to_table(
+            sf,
+            f"{setup['STAGING']}",
+            f"{setup['DB']}.INTERNAL.CLIPPER",
+            pattern,
+        )
+        _clear_stage(sf, f"{setup['STAGING']}", pattern)
