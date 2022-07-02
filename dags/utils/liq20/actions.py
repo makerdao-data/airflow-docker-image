@@ -48,7 +48,7 @@ def get_calc(address):
     return calc
 
 
-def get_clipper_actions(setup):
+def get_clipper_actions(**setup):
 
     clippers = sf.execute(f"""select clip from {setup['DB']}.internal.clipper; """).fetchall()
     clippers_list = ','.join(["'%s'" % clipper[0].lower() for clipper in clippers])
@@ -62,8 +62,6 @@ def get_clipper_actions(setup):
         FROM edw_share.raw.events
         WHERE block >= {setup['start_block']}
             AND block <= {setup['end_block']}
-            AND date(timestamp) >= '{setup['start_time'][:10]}'
-            AND date(timestamp) <= '{setup['end_time'][:10]}'
             AND contract in ({clippers_list})
             AND concat('0x', lpad(ltrim(lower(topic0), '0x'), 64, '0')) in (
                 '0x7c5bfdc0a5e8192f6cd4972f382cec69116862fb62e6abff8003874c58e064b8',
@@ -73,7 +71,11 @@ def get_clipper_actions(setup):
         ORDER BY block, order_index, log_index;
     """
 
-    logs = sf.execute(q)
+    print()
+    print(q)
+    print()
+
+    logs = sf.execute(q).fetchall()
 
     all_p = sf.execute(f"""
         select block, token, osm_price
@@ -111,7 +113,7 @@ def get_clipper_actions(setup):
                 where block >= {setup['start_block']}
                     and block <= {setup['end_block']}
                     and function in ('kick', 'take', 'redo')
-                order by block, tx_index"""
+                order by block, tx_index;"""
         ).fetchall()
     else:
         d = sf.execute(
@@ -122,7 +124,7 @@ def get_clipper_actions(setup):
                 where function in ('kick', 'take', 'redo')
                     and block >= {setup['start_block']}
                     and block <= {setup['end_block']}
-                order by block, tx_index"""
+                order by block, tx_index;"""
         ).fetchall()
 
     # CREATE A DICT CONTAINING INITIAL PRICES FOR ALL AUCTIONS
@@ -130,7 +132,8 @@ def get_clipper_actions(setup):
         f"""select ilk, auction_id, timestamp, init_price
             from {setup['DB']}.internal.action
             where type = 'kick'
-                and status = 1; """
+                and status = 1
+                and init_price is not null; """
     ).fetchall()
 
     init_prices_dict = dict()
@@ -139,6 +142,10 @@ def get_clipper_actions(setup):
 
     actions = []
     for load_id, block, timestamp, breadcrumb, tx_hash, tx_index, type, value, from_address, to_address, function, call_arguments, call_outputs, error, status, gas_used in d:
+
+        print()
+        print([load_id, block, timestamp, breadcrumb, tx_hash, tx_index, type, value, from_address, to_address, function, call_arguments, call_outputs, error, status, gas_used])
+        print()
 
         args = json.loads(call_arguments)
         outputs = json.loads(call_outputs)
@@ -167,14 +174,16 @@ def get_clipper_actions(setup):
             mkt_price = ppp[ilk.split('-')[0]][block]['price']
 
             try:
-
+                
                 if function == 'kick':
 
                     # TODO: add checks between logs and data that are already in sf
                     log = None
                     if status == 1:
 
+
                         for log_block, log_tx_hash, log_function, log_auction_id, log_usr, log_keeper, log_data in logs:
+
                             if (
                                 log_usr.lower() == args[2]['value'].lower()
                                 and int(log_auction_id, 16) == int(outputs[0]['value'])
@@ -183,7 +192,7 @@ def get_clipper_actions(setup):
                                 and log_function == '0x7c5bfdc0a5e8192f6cd4972f382cec69116862fb62e6abff8003874c58e064b8'
                             ):
                                 log = dict(
-                                    id=log_auction_id,
+                                    id=int(log_auction_id, 16),
                                     lot=int(log_data[130:194], 16),
                                     tab=int(log_data[66:130], 16),
                                     top=int(log_data[2:66], 16),
@@ -191,8 +200,6 @@ def get_clipper_actions(setup):
                                     coin=int(log_data[194:258], 16),
                                     usr=log_usr
                                 )
-                                break
-
 
                     if log:
 
@@ -229,15 +236,15 @@ def get_clipper_actions(setup):
                     if status == 1:
 
                         for log_block, log_tx_hash, log_function, log_auction_id, log_usr, log_keeper, log_data in logs:
+
                             if (
-                                log_usr.lower() == args[2]['value'].lower()
-                                and int(log_auction_id, 16) == int(outputs[0]['value'])
+                                int(log_auction_id, 16) == int(args[0]['value'])
                                 and log_tx_hash.lower() == tx_hash.lower()
                                 and log_block == int(block)
-                                and log_function == '0x5e309fd6ce72f2ab888a20056bb4210df08daed86f21f95053deb19964d86b1'
+                                and log_function == '0x05e309fd6ce72f2ab888a20056bb4210df08daed86f21f95053deb19964d86b1'
                             ):
                                 log = dict(
-                                    id=log_auction_id,
+                                    id=int(log_auction_id, 16),
                                     owe=int(log_data[130:194], 16),
                                     price=int(log_data[66:130], 16),
                                     top=int(log_data[2:66], 16),
@@ -246,7 +253,6 @@ def get_clipper_actions(setup):
                                     lot=int(log_data[258:322], 16),
                                     usr=log_usr
                                 )
-                                break
 
                     if log:
 
@@ -284,14 +290,13 @@ def get_clipper_actions(setup):
 
                         for log_block, log_tx_hash, log_function, log_auction_id, log_usr, log_keeper, log_data in logs:
                             if (
-                                log_usr.lower() == args[2]['value'].lower()
-                                and int(log_auction_id, 16) == int(outputs[0]['value'])
+                                int(log_auction_id, 16) == int(args[0]['value'])
                                 and log_tx_hash.lower() == tx_hash.lower()
                                 and log_block == int(block)
                                 and log_function == '0x275de7ecdd375b5e8049319f8b350686131c219dd4dc450a08e9cf83b03c865f'
                             ):
                                 log = dict(
-                                    id=log_auction_id,
+                                    id=int(log_auction_id, 16),
                                     lot=int(log_data[130:194], 16),
                                     tab=int(log_data[66:130], 16),
                                     top=int(log_data[2:66], 16),
@@ -374,7 +379,7 @@ def get_clipper_actions(setup):
             _write_actions_to_table(
                 sf,
                 f"{setup['STAGING']}",
-                f"f"{setup['DB']}".INTERNAL.ACTION",
+                f"{setup['DB']}.INTERNAL.ACTION",
                 pattern,
             )
             _clear_stage(sf, f"{setup['STAGING']}", pattern)
@@ -384,7 +389,7 @@ def get_clipper_actions(setup):
     return
 
 
-def clips_into_db(setup):
+def clips_into_db(**setup):
 
     last_day = sf.execute(f"""
         select max(date(timestamp))
@@ -396,6 +401,7 @@ def clips_into_db(setup):
     d = sf.execute(f"""
         select max(date(timestamp))
         from {setup['DB']}.staging.clip
+        where timestamp <= '{setup['end_time']}'
     """).fetchone()[0]
 
     range_to_compute = []
@@ -417,7 +423,6 @@ def clips_into_db(setup):
             select max(block)
             from {setup['DB']}.internal.action
         """).fetchone()[0]
-
         if not from_block:
             from_block = 12317309
 
@@ -427,12 +432,11 @@ def clips_into_db(setup):
             where date(timestamp) <= '{to_date}';
         """).fetchone()[0]
 
-        get_clipper_actions(
-            setup['load_id'],
-            from_block +1,
-            to_block,
-            from_date,
-            to_date
-        )
+        setup['start_block'] = from_block +1
+        setup['end_block'] = to_block
+        setup['start_time'] = from_date
+        setup['end_time'] = to_date
+
+        get_clipper_actions(**setup)
 
     return

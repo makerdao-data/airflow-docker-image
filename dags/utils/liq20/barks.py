@@ -30,7 +30,7 @@ def get_Bark(bbb, tx_hash, urn, ilk, auction_id):
     return Bark_ink, Bark_due
 
 
-def get_barks(setup):
+def get_barks(**setup):
 
     # get bark events
 
@@ -215,7 +215,7 @@ def get_barks(setup):
     return True
 
 
-def barks_into_db(setup):
+def barks_into_db(**setup):
 
     last_day = sf.execute(f"""
         select max(date(timestamp))
@@ -227,6 +227,7 @@ def barks_into_db(setup):
     d = sf.execute(f"""
         select max(date(timestamp))
         from {setup['DB']}.staging.dog
+        where timestamp <= '{setup['end_time']}'
     """).fetchone()[0]
 
     range_to_compute = []
@@ -243,24 +244,23 @@ def barks_into_db(setup):
     for from_date, to_date in range_to_compute:
         
         # compute
-        from_block = sf.execute("""
+        from_block = sf.execute(f"""
             SELECT MAX(block)
-            FROM LIQUIDATIONS.INTERNAL.BARK
+            FROM {setup['DB']}.INTERNAL.BARK
         """).fetchone()[0]
-
         if not from_block:
             from_block = 12317309
 
         to_block = sf.execute(f"""
             SELECT MAX(block)
-            FROM LIQUIDATIONS.STAGING.DOG
+            FROM {setup['DB']}.STAGING.DOG
             WHERE DATE(timestamp) <= '{to_date}';
         """).fetchone()[0]
         
         setup['start_block'] = from_block +1
         setup['end_block'] = to_block
         setup['start_time'] = from_date
-        setup['start_time'] = to_date
+        setup['end_time'] = to_date
 
         get_barks(**setup)
 

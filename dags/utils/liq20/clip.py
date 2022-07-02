@@ -40,7 +40,7 @@ def get_clipper_calls(**setup):
 
         clippers = []
         for clip in c:
-            clippers.append(clip)
+            clippers.append(clip[0])
 
         clipper_calls = decode_calls(
             tuple(clippers), abi, setup['load_id'], setup['start_block'], setup['end_block'], setup['start_time'], setup['end_time']

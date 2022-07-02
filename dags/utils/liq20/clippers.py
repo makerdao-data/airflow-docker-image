@@ -51,11 +51,10 @@ def update_clippers(**setup):
         },
     ]
 
-
     for block, timestamp, tx_hash, call_id, call_data, return_value, order_index in created_clippers:
 
         Clip = chain.eth.contract(address=Web3.toChecksumAddress(return_value), abi=clip_abi)
-        calc = Clip.functions.calc().call(block_identifier=block)
+        calc = Clip.functions.calc().call()
 
         c.append([
             block,

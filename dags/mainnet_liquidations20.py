@@ -41,7 +41,7 @@ default_args = {
 # [START instantiate_dag]
 @dag(
     default_args=default_args,
-    schedule_interval='*/10 * * * *',
+    schedule_interval=None,
     start_date=datetime(2021, 11, 22, 12),
     max_active_runs=1,
     catchup=False,
@@ -67,14 +67,15 @@ def mainnet_liquidations20():
             block_timestamp = chain.eth.get_block(start_block)['timestamp']
             start_time = datetime.utcfromtimestamp(block_timestamp).__str__()[:19]
         else:
-            start_block = 12316360
-            start_time = '2021-04-26 14:01:55'
+            start_block = 12246413
+            start_time = '2021-04-15 00:00:00'
 
         # prevent from running ahead of mcd.internal.prices data
         # needed for loading liquidations.internal.action
         end_block, end_time = sf.execute(f"""
             SELECT MAX(block), MAX(timestamp)
-            FROM mcd.staging.blocks;
+            FROM mcd.staging.blocks
+            WHERE timestamp <= '2021-05-30 23:59:59';
         """).fetchone()
 
         end_time = end_time.__str__()[:19]
@@ -86,17 +87,19 @@ def mainnet_liquidations20():
 
         sf.execute(q)
 
-        starter = dict(
+        setup = dict(
             load_id=load_id,
             start_block=start_block,
             end_block=end_block,
             start_time=start_time,
             end_time=end_time,
-            DB='LIQUIDATIONS',
-            STAGING='LIQUIDATIONS.STAGING.LIQUIDATIONS_EXTRACTS',
+            DB=f'{DB}',
+            STAGING=f'{DB}.STAGING.LIQUIDATIONS_EXTRACTS',
         )
 
-        return starter
+        print(setup)
+
+        return setup
 
 
     @task()
@@ -163,7 +166,7 @@ def mainnet_liquidations20():
         return True
 
 
-    setup = intro(DB='LIQUIDATIONS')
+    setup = intro(DB='FINAL_TEST_LIQUIDATIONS')
 
     new_clippers = clippers(setup, setup)
     d_calls = dog_calls(new_clippers, setup)
