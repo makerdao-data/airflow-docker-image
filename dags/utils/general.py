@@ -26,3 +26,15 @@ def balance_of(token, address, block=None):
         balance = None
 
     return balance
+
+
+def breadcrumb(call_id):
+
+    if call_id:
+        output = []
+        for i in call_id.split('_'):
+            output.append(i.zfill(3))
+
+        return '_'.join(map(str, output))
+    else:
+        return '000'

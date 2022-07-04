@@ -11,6 +11,7 @@
 #  limitations under the License.
 
 from web3 import Web3
+from datetime import datetime, timedelta
 from connectors.chain import chain
 import json
 from airflow.exceptions import AirflowFailException
@@ -23,7 +24,7 @@ from dags.utils.logs_decoder import decode_logs
 from dags.connectors.gcp import bq_query
 
 
-def get_calc(DB, address):
+def get_calc(address):
 
     calc_abi = [
         {
@@ -38,14 +39,8 @@ def get_calc(DB, address):
         }
     ]
 
-    calc_address = sf.execute(
-        f"""select calc
-                                from {DB}.internal.clipper
-                                where lower(clip) = '{address.lower()}'; """
-    ).fetchone()[0]
-
     try:
-        calc = chain.eth.contract(address=Web3.toChecksumAddress(calc_address), abi=calc_abi)
+        calc = chain.eth.contract(address=Web3.toChecksumAddress(address), abi=calc_abi)
     except Exception as e:
         print(e)
         calc = None
@@ -53,76 +48,104 @@ def get_calc(DB, address):
     return calc
 
 
-def get_ilk(DB, address):
+def get_clipper_actions(**setup):
 
-    q = f"""select ilk
-        from {DB}.internal.clipper
-        where lower(clip) = '{address.lower()}'; """
-
-    ilk = sf.execute(q).fetchone()
-
-    if ilk:
-        i = ilk[0]
-    else:
-        i = None
-
-    return i
-
-
-def get_clipper_actions(load_id, start_block, end_block, start_time, end_time, DB, STAGING):
-
-    clippers = sf.execute(f"""select clip from {DB}.internal.clipper; """).fetchall()
+    clippers = sf.execute(f"""select clip from {setup['DB']}.internal.clipper; """).fetchall()
     clippers_list = ','.join(["'%s'" % clipper[0].lower() for clipper in clippers])
 
-    q = f"""SELECT *
-            FROM `bigquery-public-data.crypto_ethereum.logs`
-            WHERE block_number >= {start_block} AND block_number <= {end_block}
-                AND date(block_timestamp) >= '{start_time[:10]}' AND date(block_timestamp) <= '{end_time[:10]}'
-                AND address in ({clippers_list})
-                AND topics[offset(0)] in ('0x7c5bfdc0a5e8192f6cd4972f382cec69116862fb62e6abff8003874c58e064b8',
-                                            '0x05e309fd6ce72f2ab888a20056bb4210df08daed86f21f95053deb19964d86b1',
-                                            '0x275de7ecdd375b5e8049319f8b350686131c219dd4dc450a08e9cf83b03c865f')
-            ORDER BY block_number, transaction_index, log_index;"""
+    q = f"""
+        SELECT block, tx_hash, concat('0x', lpad(ltrim(lower(topic0), '0x'), 64, '0')) as function,
+            topic1 as auction_id,
+            concat('0x', lpad(ltrim(lower(topic2), '0x'), 40, '0')) as urn,
+            concat('0x', lpad(ltrim(lower(topic3), '0x'), 40, '0')) as keeper,
+            log_data
+        FROM edw_share.raw.events
+        WHERE block >= {setup['start_block']}
+            AND block <= {setup['end_block']}
+            AND contract in ({clippers_list})
+            AND concat('0x', lpad(ltrim(lower(topic0), '0x'), 64, '0')) in (
+                '0x7c5bfdc0a5e8192f6cd4972f382cec69116862fb62e6abff8003874c58e064b8',
+                '0x05e309fd6ce72f2ab888a20056bb4210df08daed86f21f95053deb19964d86b1',
+                '0x275de7ecdd375b5e8049319f8b350686131c219dd4dc450a08e9cf83b03c865f'
+            ) AND status
+        ORDER BY block, order_index, log_index;
+    """
 
-    logs = decode_logs(bq_query(q))
+    logs = sf.execute(q).fetchall()
 
-    if start_block:
+    all_p = sf.execute(f"""
+        select block, token, osm_price
+        from mcd.internal.prices
+        where block >= {setup['start_block']}
+        and block <= {setup['end_block']};
+    """).fetchall()
+
+    ppp = dict()
+    for block, ilk, price in all_p:
+
+        ppp.setdefault(ilk, {})
+        ppp[ilk][block] = dict(
+            price=price
+        )
+    
+    all_c = sf.execute(f"""
+        select clip, ilk, calc
+        from {setup['DB']}.internal.clipper;
+    """).fetchall()
+
+    ccc = dict()
+    for clip, ilk, calc in all_c:
+        
+        ccc.setdefault(clip, {})
+        ccc[clip]['ilk'] = ilk
+        ccc[clip]['calc'] = calc
+
+    if {setup['start_block']}:
         d = sf.execute(
-            f"""select *
-                from {DB}.staging.clip
-                where block >= {start_block}
+            f"""select load_id, block, timestamp, breadcrumb, tx_hash,
+                    tx_index, type, value, from_address, to_address,
+                    function, arguments, outputs, error, status, gas_used
+                from {setup['DB']}.staging.clip
+                where block >= {setup['start_block']}
+                    and block <= {setup['end_block']}
                     and function in ('kick', 'take', 'redo')
-                order by block, tx_index"""
+                order by block, tx_index;"""
         ).fetchall()
     else:
         d = sf.execute(
-            f"""select *
-                from {DB}.staging.clip
+            f"""select load_id, block, timestamp, breadcrumb, tx_hash,
+                    tx_index, type, value, from_address, to_address,
+                    function, arguments, outputs, error, status, gas_used
+                from {setup['DB']}.staging.clip
                 where function in ('kick', 'take', 'redo')
-                order by block, tx_index"""
+                    and block >= {setup['start_block']}
+                    and block <= {setup['end_block']}
+                order by block, tx_index;"""
         ).fetchall()
 
     # CREATE A DICT CONTAINING INITIAL PRICES FOR ALL AUCTIONS
     all_init_prices = sf.execute(
         f"""select ilk, auction_id, timestamp, init_price
-            from {DB}.internal.action
-            where type = 'kick' and status = 1; """
+            from {setup['DB']}.internal.action
+            where type = 'kick'
+                and status = 1
+                and init_price is not null; """
     ).fetchall()
 
     init_prices_dict = dict()
-    for i in all_init_prices:
-        init_prices_dict[i[0]] = {i[1]: [i[2], int(i[3] * (10 ** 27))]}
+    for ilk, auction_id, timestamp, init_price in all_init_prices:
+        init_prices_dict[ilk] = {auction_id: [timestamp, int(init_price * (10 ** 27))]}
 
     actions = []
-    for i in d:
+    for load_id, block, timestamp, breadcrumb, tx_hash, tx_index, type, value, from_address, to_address, function, call_arguments, call_outputs, error, status, gas_used in d:
 
-        args = json.loads(i[11])
-        outputs = json.loads(i[12])
-        tx_hash = i[4]
-        block = i[1]
-        tx_index = i[5]
+        args = json.loads(call_arguments)
+        outputs = json.loads(call_outputs)
+        tx_hash = tx_hash
+        block = block
+        tx_index = tx_index
 
-        if i[10] in ['kick', 'take', 'redo']:
+        if function in ['kick', 'take', 'redo']:
 
             data = None  # take
             max_collateral_amt = None  # take
@@ -137,33 +160,41 @@ def get_clipper_actions(load_id, start_block, end_block, start_time, end_time, D
             incentives = None  # kick / redo
             debt = None  # take / redo / kick
             urn = None
-            ilk = get_ilk(DB, i[9])
+            ilk = ccc[to_address]['ilk']
 
-            osm_price, mkt_price = sf.execute(
-                f"""select osm_price, mkt_price
-                    from mcd.internal.prices
-                    where block = {i[1]}
-                    and token = '{ilk.split('-')[0]}'; """
-            ).fetchone()
+            osm_price = ppp[ilk.split('-')[0]][block]['price']
+            mkt_price = ppp[ilk.split('-')[0]][block]['price']
 
             try:
-
-                if i[10] == 'kick':
+                
+                if function == 'kick':
 
                     # TODO: add checks between logs and data that are already in sf
                     log = None
-                    if i[14] == 1:
-                        for item in logs:
+                    if status == 1:
+
+
+                        for log_block, log_tx_hash, log_function, log_auction_id, log_usr, log_keeper, log_data in logs:
+
                             if (
-                                item['usr'].lower() == args[2]['value'].lower()
-                                and int(item['id']) == int(outputs[0]['value'])
-                                and item['tx_hash'].lower() == tx_hash.lower()
-                                and int(item['block']) == int(block)
-                                and item['event'] == 'kick'
+                                log_usr.lower() == args[2]['value'].lower()
+                                and int(log_auction_id, 16) == int(outputs[0]['value'])
+                                and log_tx_hash.lower() == tx_hash.lower()
+                                and log_block == int(block)
+                                and log_function == '0x7c5bfdc0a5e8192f6cd4972f382cec69116862fb62e6abff8003874c58e064b8'
                             ):
-                                log = item
+                                log = dict(
+                                    id=int(log_auction_id, 16),
+                                    lot=int(log_data[130:194], 16),
+                                    tab=int(log_data[66:130], 16),
+                                    top=int(log_data[2:66], 16),
+                                    kpr=log_keeper,
+                                    coin=int(log_data[194:258], 16),
+                                    usr=log_usr
+                                )
 
                     if log:
+
                         auction_id = log['id']
                         available_collateral = wad(log['lot'])  # / 10**18
                         debt = rad(log['tab'])  # / 10**45
@@ -175,16 +206,17 @@ def get_clipper_actions(load_id, start_block, end_block, start_time, end_time, D
 
                         # ADD INITIAL PRICE OF NEW AUCTION TO A DICT
                         init_prices_dict.setdefault(ilk, {auction_id: []})
-                        init_prices_dict[ilk][auction_id] = [i[2], log['top']]
+                        init_prices_dict[ilk][auction_id] = [timestamp, log['top']]
 
                     else:
+
                         auction_id = None
                         available_collateral = wad(args[1]["value"])
                         debt = rad(args[0]["value"])
                         urn = args[2]["value"]
                         keeper = args[3]["value"]
 
-                elif i[10] == 'take':
+                elif function == 'take':
 
                     auction_id = args[0]['value']
                     max_collateral_amt = wad(args[1]['value'])  # / 10**18
@@ -192,23 +224,34 @@ def get_clipper_actions(load_id, start_block, end_block, start_time, end_time, D
                     data = args[4]['value']
 
                     log = None
-                    if i[14] == 1:
-                        for item in logs:
+
+                    if status == 1:
+
+                        for log_block, log_tx_hash, log_function, log_auction_id, log_usr, log_keeper, log_data in logs:
+
                             if (
-                                int(item['id']) == int(args[0]['value'])
-                                and item['tx_hash'].lower() == tx_hash.lower()
-                                and int(item['block']) == int(block)
-                                and item['event'] == 'take'
+                                int(log_auction_id, 16) == int(args[0]['value'])
+                                and log_tx_hash.lower() == tx_hash.lower()
+                                and log_block == int(block)
+                                and log_function == '0x05e309fd6ce72f2ab888a20056bb4210df08daed86f21f95053deb19964d86b1'
                             ):
-                                log = item
+                                log = dict(
+                                    id=int(log_auction_id, 16),
+                                    owe=int(log_data[130:194], 16),
+                                    price=int(log_data[66:130], 16),
+                                    top=int(log_data[2:66], 16),
+                                    kpr=log_keeper,
+                                    tab=int(log_data[194:258], 16),
+                                    lot=int(log_data[258:322], 16),
+                                    usr=log_usr
+                                )
 
                     if log:
+
                         available_collateral = wad(log['lot'])  # / 10**18
                         recovered_debt = rad(log['owe'])  # / 10**45
                         debt = rad(log['tab'])  # / 10**45
                         collateral_price = ray(log['price'])  # / 10**27
-                        # check if collateral price != 0
-                        # TODO: add warning that smth is wrong
                         if collateral_price and collateral_price != 0:
                             sold_collateral = (rad(log['owe'])) / (ray(log['price']))
                         else:
@@ -217,38 +260,46 @@ def get_clipper_actions(load_id, start_block, end_block, start_time, end_time, D
                             closing_take = 1
                         urn = log['usr']
 
-                    else:
 
-                        try:
-                            initial_auction_data = init_prices_dict[ilk][auction_id]
-                            initial_auction_price = initial_auction_data[1]
-                            seconds_passed = i[2] - initial_auction_data[0]
-                            c = get_calc(DB, i[9])
-                            collateral_price = c.functions.price(
-                                initial_auction_price, seconds_passed.seconds
-                            ).call()
-                            collateral_price = ray(collateral_price)  # / 10**27
-                        except Exception as e:
-                            print(e)
-                            print('#ERRR: AUCTION DOES NOT EXIST')
+                        initial_auction_data = init_prices_dict[ilk][auction_id]
+                        initial_auction_price = initial_auction_data[1]
+                        seconds_passed = timestamp - initial_auction_data[0]
+                        c = get_calc(ccc[to_address]['calc'])
+                        collateral_price = c.functions.price(
+                            initial_auction_price, seconds_passed.seconds
+                        ).call()
+                        collateral_price = ray(collateral_price)  # / 10**27
 
-                elif i[10] == 'redo':
+
+                elif function == 'redo':
 
                     auction_id = args[0]['value']
                     keeper = args[1]['value']
 
                     log = None
-                    if i[14] == 1:
-                        for item in logs:
+
+                    if status == 1:
+
+                        for log_block, log_tx_hash, log_function, log_auction_id, log_usr, log_keeper, log_data in logs:
                             if (
-                                int(item['id']) == int(args[0]['value'])
-                                and item['tx_hash'].lower() == tx_hash.lower()
-                                and int(item['block']) == int(block)
-                                and item['event'] == 'redo'
+                                int(log_auction_id, 16) == int(args[0]['value'])
+                                and log_tx_hash.lower() == tx_hash.lower()
+                                and log_block == int(block)
+                                and log_function == '0x275de7ecdd375b5e8049319f8b350686131c219dd4dc450a08e9cf83b03c865f'
                             ):
-                                log = item
+                                log = dict(
+                                    id=int(log_auction_id, 16),
+                                    lot=int(log_data[130:194], 16),
+                                    tab=int(log_data[66:130], 16),
+                                    top=int(log_data[2:66], 16),
+                                    kpr=log_keeper,
+                                    coin=int(log_data[194:258], 16),
+                                    usr=log_usr
+                                )
+                                break
 
                     if log:
+
                         available_collateral = wad(log['lot'])  # / 10**18
                         debt = rad(log['tab'])  # / 10**45
                         init_price = ray(log['top'])  # / 10**27
@@ -256,19 +307,14 @@ def get_clipper_actions(load_id, start_block, end_block, start_time, end_time, D
                         incentives = rad(log['coin'])  # / 10**45
                         urn = log['usr']
 
-                    # get current collateral price
-                    try:
                         initial_auction_data = init_prices_dict[ilk][auction_id]
                         initial_auction_price = initial_auction_data[1]
-                        seconds_passed = i[2] - initial_auction_data[0]
-                        c = get_calc(DB, i[9])
+                        seconds_passed = timestamp - initial_auction_data[0]
+                        c = get_calc(ccc[to_address]['calc'])
                         collateral_price = c.functions.price(
                             initial_auction_price, seconds_passed.seconds
                         ).call()
                         collateral_price = ray(collateral_price)  # / 10**27
-                    except Exception as e:
-                        print(e)
-                        print('#ERRR: AUCTION DOES NOT EXIST')
 
                 else:
 
@@ -276,19 +322,20 @@ def get_clipper_actions(load_id, start_block, end_block, start_time, end_time, D
 
             except Exception as e:
                 print(e)
-                print(i)
-                raise AirflowFailException("#ERROR ON GATHERING DATA")
+                print('#ERR')
+                print([load_id, block, timestamp, breadcrumb, tx_hash, tx_index, type, value, from_address, to_address, function, call_arguments, call_outputs, error, status, gas_used])
 
             try:
+                # load_id, block, timestamp, breadcrumb, tx_hash, tx_index, type, value, from_address, to_address, function, call_arguments, call_outputs, error, status, gas_used
                 actions.append(
                     [
                         load_id,
                         auction_id,
-                        i[2],
-                        i[1],
-                        i[4],
-                        i[10],
-                        i[8],
+                        timestamp,
+                        block,
+                        tx_hash,
+                        function,
+                        from_address,
                         data,
                         debt,
                         init_price,
@@ -303,34 +350,85 @@ def get_clipper_actions(load_id, start_block, end_block, start_time, end_time, D
                         keeper,
                         incentives,
                         urn,
-                        i[15],
-                        i[14],
-                        i[13],
+                        gas_used,
+                        status,
+                        error,
                         None,
-                        i[3],
+                        breadcrumb,
                         ilk,
                         mkt_price
                     ]
                 )
             except Exception as e:
                 print(e)
-                print(i)
-                raise AirflowFailException("#ERROR ON PREPARING DATA TO LOAD")
+                print([load_id, block, timestamp, breadcrumb, tx_hash, tx_index, type, value, from_address, to_address, function, call_arguments, call_outputs, error, status, gas_used])
+
 
     if len(actions) > 0:
-        # if custom_write_to_stage(actions, f"{DB}.staging.liquidations_extracts"):
-        #     write_actions_to_table(f"{DB}.staging.liquidations_extracts", f"{DB}.internal.action")
 
-        pattern = _write_to_stage(sf, actions, f"{DB}.staging.liquidations_extracts")
+        pattern = _write_to_stage(sf, actions, f"{setup['STAGING']}")
         if pattern:
             _write_actions_to_table(
                 sf,
-                f"{DB}.staging.liquidations_extracts",
-                f"{DB}.internal.action",
+                f"{setup['STAGING']}",
+                f"{setup['DB']}.INTERNAL.ACTION",
                 pattern,
             )
-            _clear_stage(sf, f"{DB}.staging.liquidations_extracts", pattern)
+            _clear_stage(sf, f"{setup['STAGING']}", pattern)
 
     print('{} rows loaded.'.format(len(actions)))
 
-    return True
+    return
+
+
+def clips_into_db(**setup):
+
+    last_day = sf.execute(f"""
+        select max(date(timestamp))
+        from {setup['DB']}.internal.action;
+    """).fetchone()[0]
+    if not last_day:
+        last_day = datetime(2021,4,26).date()
+
+    d = sf.execute(f"""
+        select max(date(timestamp))
+        from {setup['DB']}.staging.clip
+        where timestamp <= '{setup['end_time']}'
+    """).fetchone()[0]
+
+    range_to_compute = []
+    while last_day < d:
+        
+        range_from = last_day
+        range_to = last_day + timedelta(days=30)
+
+        last_day = range_to
+
+        # print(range_from, range_to)
+        range_to_compute.append([range_from, range_to])
+
+    range_to_compute.append([range_to, d])
+
+    for from_date, to_date in range_to_compute:
+        # compute
+        from_block = sf.execute(f"""
+            select max(block)
+            from {setup['DB']}.internal.action
+        """).fetchone()[0]
+        if not from_block:
+            from_block = 12317309
+
+        to_block = sf.execute(f"""
+            select max(block)
+            from {setup['DB']}.staging.clip
+            where date(timestamp) <= '{to_date}';
+        """).fetchone()[0]
+
+        setup['start_block'] = from_block +1
+        setup['end_block'] = to_block
+        setup['start_time'] = from_date
+        setup['end_time'] = to_date
+
+        get_clipper_actions(**setup)
+
+    return
