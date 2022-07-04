@@ -173,7 +173,7 @@ def mainnet_liquidations20():
         return
 
 
-    setup = intro(DB='FINAL_TEST_LIQUIDATIONS')
+    setup = intro(DB='LIQUIDATIONS')
 
     new_clippers = clippers(setup, setup)
     d_calls = dog_calls(new_clippers, setup)
