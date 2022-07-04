@@ -71,10 +71,6 @@ def get_clipper_actions(**setup):
         ORDER BY block, order_index, log_index;
     """
 
-    print()
-    print(q)
-    print()
-
     logs = sf.execute(q).fetchall()
 
     all_p = sf.execute(f"""
@@ -142,10 +138,6 @@ def get_clipper_actions(**setup):
 
     actions = []
     for load_id, block, timestamp, breadcrumb, tx_hash, tx_index, type, value, from_address, to_address, function, call_arguments, call_outputs, error, status, gas_used in d:
-
-        print()
-        print([load_id, block, timestamp, breadcrumb, tx_hash, tx_index, type, value, from_address, to_address, function, call_arguments, call_outputs, error, status, gas_used])
-        print()
 
         args = json.loads(call_arguments)
         outputs = json.loads(call_outputs)

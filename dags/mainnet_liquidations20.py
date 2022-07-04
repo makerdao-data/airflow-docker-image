@@ -21,6 +21,7 @@ from dags.utils.liq20.actions import clips_into_db
 from dags.utils.liq20.dog import get_dog_calls
 from dags.utils.liq20.barks import barks_into_db
 from dags.utils.liq20.clippers import update_clippers
+from dags.utils.liq20.test import liquidations_test
 from dags.connectors.sf import sf
 from dags.connectors.chain import chain
 from dags.connectors.gcp import bq_query
@@ -74,8 +75,7 @@ def mainnet_liquidations20():
         # needed for loading liquidations.internal.action
         end_block, end_time = sf.execute(f"""
             SELECT MAX(block), MAX(timestamp)
-            FROM mcd.staging.blocks
-            WHERE timestamp <= '2021-05-30 23:59:59';
+            FROM mcd.staging.blocks;
         """).fetchone()
 
         end_time = end_time.__str__()[:19]
@@ -164,6 +164,13 @@ def mainnet_liquidations20():
         sf.execute(q)
 
         return True
+    
+    @task()
+    def test(task_dependency, setup):
+
+        liquidations_test(**setup)
+
+        return
 
 
     setup = intro(DB='FINAL_TEST_LIQUIDATIONS')
@@ -174,13 +181,14 @@ def mainnet_liquidations20():
     c_calls = clipper_calls(barks, setup)
     actions = liquidations_actions(c_calls, setup)
     ra = create_rounds_auctions(actions, setup)
-    outro = outro(
+    o = outro(
         ra,
         load_id=setup['load_id'],
         dog_calls=d_calls['calls'],
         clipper_calls=c_calls['calls'],
         DB=setup['DB'],
     )
+    t = test(o, setup)
 
 
 # [START dag_invocation]

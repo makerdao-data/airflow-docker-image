@@ -23,10 +23,15 @@ from dags.utils.general import breadcrumb
 def update_clippers(**setup):
 
     created_clippers = sf.execute(f"""
-        select block, timestamp, tx_hash, call_id, call_data::varchar as call_data, concat('0x', lpad(ltrim(lower(return_value), '0x'), 40, '0')) as return_value, order_index
+        select block, timestamp, tx_hash, call_id,
+            call_data::varchar as call_data,
+            concat('0x', lpad(ltrim(lower(return_value), '0x'), 40, '0')) as return_value,
+            order_index
         from edw_share.raw.calls
-        where to_address = lower('0x0716F25fBaAae9b63803917b6125c10c313dF663')
-        and left(call_data, 10) = '0xbf5f804e'
+        where to_address in (
+            lower('0x0716F25fBaAae9b63803917b6125c10c313dF663'),
+            lower('0x1926862F899410BfC19FeFb8A3C69C7Aed22463a'))
+        and left(call_data, 10) in ('0xbf5f804e', '0x61010060')
         and block >= {setup['start_block']}
         and block <= {setup['end_block']}
         and status;
