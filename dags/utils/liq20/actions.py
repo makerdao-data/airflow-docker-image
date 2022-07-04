@@ -397,6 +397,7 @@ def clips_into_db(**setup):
     """).fetchone()[0]
 
     range_to_compute = []
+    range_to = None
     while last_day < d:
         
         range_from = last_day
@@ -406,7 +407,8 @@ def clips_into_db(**setup):
 
         # print(range_from, range_to)
         range_to_compute.append([range_from, range_to])
-
+    if not range_to:
+        range_to = last_day
     range_to_compute.append([range_to, d])
 
     for from_date, to_date in range_to_compute:
