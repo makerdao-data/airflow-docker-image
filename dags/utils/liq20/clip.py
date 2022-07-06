@@ -14,17 +14,14 @@ import json
 import os, sys
 
 sys.path.append('/opt/airflow/')
-from dags.utils.bq_adapters import decode_calls
-from connectors.sf import sf, _write_to_stage, _write_to_table, _clear_stage
+from config import absolute_import_path
+from dags.utils.edw_adapters import edw_decode_calls
+from dags.connectors.sf import sf, _write_to_stage, _write_to_table, _clear_stage
 
 
 def get_clipper_calls(**setup):
 
-    currentdir = os.path.dirname(os.path.realpath(__file__))
-    parentdir = os.path.dirname(currentdir)
-    gr_parentdir = os.path.dirname(parentdir)
-    path = os.path.join(gr_parentdir, 'connectors/abis/')
-    with open(path + 'clipper.json', 'r') as f:
+    with open(absolute_import_path + 'clip.json', 'r') as f:
         abi = json.load(f)
 
     if setup['start_block'] > setup['end_block']:
@@ -42,7 +39,7 @@ def get_clipper_calls(**setup):
         for clip in c:
             clippers.append(clip[0])
 
-        clipper_calls = decode_calls(
+        clipper_calls = edw_decode_calls(
             tuple(clippers), abi, setup['load_id'], setup['start_block'], setup['end_block'], setup['start_time'], setup['end_time']
         )
 

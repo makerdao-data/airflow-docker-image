@@ -66,6 +66,29 @@ class Call:
             self.status = 1
 
 
+class EDWCall:
+    def __init__(self, raw_trace, abi):
+
+        self.tx_hash = raw_trace[0]
+        self.tx_index = raw_trace[1]
+        self.breadcrumb = raw_trace[2] or '000'
+        self.type = 'call'
+        self.from_address = raw_trace[3]
+        self.to_address = raw_trace[4]
+        self.value = raw_trace[5]
+
+        self.function, self.arguments, self.outputs = decode_call(raw_trace[6], raw_trace[7], abi)
+
+        self.gas_used = raw_trace[8] or 0
+        self.error = raw_trace[9]
+        self.timestamp = raw_trace[11]
+        self.block_number = raw_trace[12]
+        if raw_trace[10] == 0 or (self.error is not None and len(self.error) > 0):
+            self.status = 0
+        else:
+            self.status = 1
+
+
 class GasCall:
     def __init__(self, raw_trace, abi):
 

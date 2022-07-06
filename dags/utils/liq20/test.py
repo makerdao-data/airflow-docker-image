@@ -49,7 +49,7 @@ def liquidations_test(**setup):
         c = chain.eth.contract(address=Web3.toChecksumAddress(clip), abi=ABI)
         chain_kicks = 0
         try:
-            chain_kicks = c.functions.kicks().call()
+            chain_kicks = c.functions.kicks().call(block_identifier=setup['end_block'])
         except:
             pass
 
