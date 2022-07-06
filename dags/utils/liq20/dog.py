@@ -14,17 +14,14 @@ import json
 import os, sys
 
 sys.path.append('/opt/airflow/')
-from dags.utils.bq_adapters import decode_calls
+from config import absolute_import_path
+from dags.utils.edw_adapters import edw_decode_calls
 from dags.connectors.sf import sf, _write_to_stage, _write_to_table, _clear_stage
 
 
 def get_dog_calls(**setup):
 
-    currentdir = os.path.dirname(os.path.realpath(__file__))
-    parentdir = os.path.dirname(currentdir)
-    gr_parentdir = os.path.dirname(parentdir)
-    path = os.path.join(gr_parentdir, 'connectors/abis/')
-    with open(path + 'dog.json', 'r') as f:
+    with open(absolute_import_path + 'dog.json', 'r') as f:
         abi = json.load(f)
 
     if setup['start_block'] > setup['end_block']:
@@ -33,7 +30,7 @@ def get_dog_calls(**setup):
         
     else:
 
-        dog_calls = decode_calls(
+        dog_calls = edw_decode_calls(
             ('0x135954d155898D42C90D2a57824C690e0c7BEf1B'.lower(),),
             abi,
             setup['load_id'],

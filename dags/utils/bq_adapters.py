@@ -16,6 +16,7 @@ import sys
 sys.path.append('/opt/airflow/')
 from dags.connectors.gcp import bq_query
 from dags.utils.decode import GasCall, Call, Block
+from dags.utils.general import breadcrumb
 
 
 def extract_calls(start_block=None, end_block=None, start_time=None, end_time=None, contract=None, abi=None):
