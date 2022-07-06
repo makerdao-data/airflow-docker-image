@@ -1,7 +1,7 @@
-from dags.connectors.sf import sf
+from dags.connectors.sf import sf, connection
+import pandas as pd
 
-
-def _load(**setup):
+def _load(engine, **setup):
 
     sf.execute(
         """
@@ -38,39 +38,40 @@ def _load(**setup):
         """
     )
 
-    sf.execute(
-        f"""
+    # sf.execute("""
+    #     f
 
-            insert into maker.public.parameters (
+    #         insert into maker.public.parameters (
 
-            with
-            clippers as
-            (select distinct maker.public.etl_hextostr(substr(sd.location, 3, 42)) as ilk,
-            sd.curr_value as address,
-            sd.tx_hash,
-            txs.to_address as DssSpell
-            from edw_share.raw.storage_diffs sd, edw_share.raw.transactions txs
-            where sd.tx_hash = txs.tx_hash and
-            sd.contract = '0x135954d155898d42c90d2a57824c690e0c7bef1b' and
-            sd.location like '1[%' and
-            substr(sd.location, length(sd.location)) = '0' and
-            sd.status),
-            flippers as
-            (select distinct maker.public.etl_hextostr(substr(location, 3, 42)) as ilk, curr_value as address
-            from edw_share.raw.storage_diffs
-            where contract = lower('0xa5679C04fc3d9d8b0AaB1F0ab83555b301cA70Ea') and
-            location like '1[%' and
-            substr(location, length(location)) = '0'and
-            status)
+        #     with
+        #     clippers as
+        #     (select distinct maker.public.etl_hextostr(substr(sd.location, 3, 42)) as ilk,
+        #     sd.curr_value as address,
+        #     sd.tx_hash,
+        #     txs.to_address as DssSpell
+        #     from edw_share.raw.storage_diffs sd, edw_share.raw.transactions txs
+        #     where sd.tx_hash = txs.tx_hash and
+        #     sd.contract = '0x135954d155898d42c90d2a57824c690e0c7bef1b' and
+        #     sd.location like '1[%' and
+        #     substr(sd.location, length(sd.location)) = '0' and
+        #     sd.status),
+        #     flippers as
+        #     (select distinct maker.public.etl_hextostr(substr(location, 3, 42)) as ilk, curr_value as address
+        #     from edw_share.raw.storage_diffs
+        #     where contract = lower('0xa5679C04fc3d9d8b0AaB1F0ab83555b301cA70Ea') and
+        #     location like '1[%' and
+        #     substr(location, length(location)) = '0'and
+        #     status)
 
-            select p.block, p.timestamp, p.tx_hash,
-            case
-            when t.to_address is null then p.DssSpell
-            else t.to_address
-            end as source,
-            p.parameter, p.ilk, p.from_value, p.to_value from
-            (
-
+        #     select p.block, p.timestamp, p.tx_hash,
+        #     case
+        #     when t.to_address is null then p.DssSpell
+        #     else t.to_address
+        #     end as source,
+        #     p.parameter, p.ilk, p.from_value, p.to_value from
+            # (
+    
+    vat_line_dust = pd.read_sql(f"""
             // VAT parameters (line, dust)
             select block, timestamp, tx_hash, order_index,
             iff(substr(location, length(location)) = '3', 'VAT.ilks.line', 'VAT.ilks.dust') as parameter,
@@ -83,10 +84,9 @@ def _load(**setup):
             location like '2[%' and
             substr(location, length(location)) in ('3' ,'4') and
             block > {setup['start_block']} and block <= {setup['end_block']} and
-            status
+            status""", engine)
 
-            union
-
+    dciam_line_gap = pd.read_sql(f"""
             // DC-IAM parameters (line, gap)
             select block, timestamp, tx_hash, order_index,
             case substr(location, length(location))
@@ -102,10 +102,9 @@ def _load(**setup):
             location like '0[%' and
             substr(location, length(location)) in ('0', '1') and
             block > {setup['start_block']} and block <= {setup['end_block']} and
-            status
+            status""", engine)
 
-            union
-
+    dciam_ttl = pd.read_sql(f"""
             // DC-IAM parameters (ttl)
             select block, timestamp, tx_hash, order_index,
             'DC-IAM.ilks.ttl'as parameter,
@@ -119,10 +118,9 @@ def _load(**setup):
             substr(location, length(location)) = '2' and
             from_value != to_value and
             block > {setup['start_block']} and block <= {setup['end_block']} and
-            status
-
-            union
-
+            status""", engine)
+    
+    spotter_mat = pd.read_sql(f"""
             // SPOTTER parameters (mat)
             select block, timestamp, tx_hash, order_index,
             'SPOTTER.ilks.mat' as parameter,
@@ -134,10 +132,9 @@ def _load(**setup):
             where contract = '0x65c79fcb50ca1594b025960e539ed7a9a6d434a3' and
             location like '1[%.1' and
             block > {setup['start_block']} and block <= {setup['end_block']} and
-            status
+            status""", engine)
 
-            union
-
+    jug_duty = pd.read_sql(f"""
             // JUG parameters (duty)
             select block, timestamp, tx_hash, order_index,
             'JUG.ilks.duty' as parameter,
@@ -152,9 +149,9 @@ def _load(**setup):
             location like '1[%.0' and
             block > {setup['start_block']} and block <= {setup['end_block']} and
             status
+    """, engine)
 
-            union
-
+    dog_chop_hole = pd.read_sql(f"""
             // DOG parameters (chop, hole)
             select block, timestamp, tx_hash, order_index,
             case substr(location, length(location))
@@ -176,10 +173,9 @@ def _load(**setup):
             location like '1[%' and
             substr(location, length(location)) in ('1', '2') and
             block > {setup['start_block']} and block <= {setup['end_block']} and
-            status
+            status""", engine)
 
-            union
-
+    clipper_buf_tail_cusp = pd.read_sql(f"""
             // CLIPPERs parameters (buf, tail, cusp)
             select d.block, d.timestamp, d.tx_hash, d.order_index,
             case substr(d.location, length(d.location))
@@ -201,10 +197,9 @@ def _load(**setup):
             where d.contract = c.address and
             d.location in ('5', '6', '7') and
             d.block > {setup['start_block']} and d.block <= {setup['end_block']} and
-            d.status
+            d.status""", engine)
 
-            union
-
+    clipper_chip = pd.read_sql(f"""
             // CLIPPERs parameters (chip)
             select d.block, d.timestamp, d.tx_hash, d.order_index,
             'CLIPPER.chip' as parameter,
@@ -217,10 +212,9 @@ def _load(**setup):
             d.location = '8' and
             from_value != to_value and
             d.block > {setup['start_block']} and d.block <= {setup['end_block']} and
-            d.status
+            d.status""", engine)
 
-            union
-
+    clipper_tip = pd.read_sql(f"""
             // CLIPPERs parameters (tip)
             select d.block, d.timestamp, d.tx_hash, d.order_index,
             'CLIPPER.tip' as parameter,
@@ -233,10 +227,9 @@ def _load(**setup):
             d.location = '8' and
             from_value != to_value and
             d.block > {setup['start_block']} and d.block <= {setup['end_block']} and
-            d.status
+            d.status""", engine)
 
-            union
-
+    vow_hump_sump_dump_bump = pd.read_sql(f"""
             // VOW parameters (hump, sump, dump, bump)
             select block, timestamp, tx_hash, order_index,
             case location
@@ -253,10 +246,9 @@ def _load(**setup):
             where contract = '0xa950524441892a31ebddf91d3ceefa04bf454466' and
             location in ('8', '9', '10', '11') and
             block > {setup['start_block']} and block <= {setup['end_block']} and
-            status
+            status""", engine)
 
-            union
-
+    flapper_beg = pd.read_sql(f"""
             // FLAPPER parameters (beg)
             select block, timestamp, tx_hash, order_index,
             'FLAPPER.beg' as parameter,
@@ -268,10 +260,9 @@ def _load(**setup):
             where contract = '0xc4269cc7acdedc3794b221aa4d9205f564e27f0d' and
             location = '4' and
             block > {setup['start_block']} and block <= {setup['end_block']} and
-            status
+            status""", engine)
 
-            union
-
+    flapper_ttl = pd.read_sql(f"""
             // FLAPPER parameters (ttl)
             select block, timestamp, tx_hash, order_index,
             'FLAPPER.ttl' as parameter,
@@ -284,10 +275,9 @@ def _load(**setup):
             location = '5' and
             from_value != to_value and
             block > {setup['start_block']} and block <= {setup['end_block']} and
-            status
+            status""", engine)
 
-            union
-
+    flopper_bed_pad = pd.read_sql(f"""
             // FLOPPER parameters (bed, pad)
             select block, timestamp, tx_hash, order_index,
             case location
@@ -302,10 +292,9 @@ def _load(**setup):
             where contract = '0xa41b6ef151e06da0e34b009b86e828308986736d' and
             location in ('4', '5') and
             block > {setup['start_block']} and block <= {setup['end_block']} and
-            status
+            status""", engine)
 
-            union
-
+    flopper_ttl = pd.read_sql(f"""
             // FLOPPER parameters (ttl)
             select block, timestamp, tx_hash, order_index,
             'FLOPPER.ttl' as parameter,
@@ -318,10 +307,9 @@ def _load(**setup):
             location = '6' and
             from_value != to_value and
             block > {setup['start_block']} and block <= {setup['end_block']} and
-            status
+            status""", engine)
 
-            union
-
+    dssDirectDepositAaveDai_tau_bar = pd.read_sql(f"""
             // D3M DIRECT-AAVEV2-DAI (DssDirectDepositAaveDai) parameters (tau, bar)
             select block, timestamp, tx_hash, order_index,
             case location
@@ -343,10 +331,10 @@ def _load(**setup):
             from_value != to_value and
             location in ('1', '2') and
             block > {setup['start_block']} and block <= {setup['end_block']} and
-            status
+            status""", engine)
 
-            union
-
+    cat_chop_dunk = pd.read_sql(f"""
+            // Cat Chop Dunk
             select block, timestamp, tx_hash, order_index,
             case substr(location, length(location))
             when '1' then 'CAT.ilks.chop'
@@ -367,53 +355,85 @@ def _load(**setup):
             location like '1[%' and
             from_value != to_value and
             block > {setup['start_block']} and block <= {setup['end_block']} and
-            status
+            status""", engine)
 
-            union
+    protocol_params: pd.DataFrame = pd.concat([
+            vat_line_dust,
+            dciam_line_gap,
+            dciam_ttl,
+            spotter_mat,
+            jug_duty,
+            dog_chop_hole,
+            clipper_buf_tail_cusp,
+            clipper_chip,
+            clipper_tip,
+            vow_hump_sump_dump_bump,
+            flapper_beg,
+            flapper_ttl,
+            flopper_bed_pad,
+            flopper_ttl,
+            dssDirectDepositAaveDai_tau_bar,
+            cat_chop_dunk
+    ])
 
-            select sd.block, sd.timestamp, sd.tx_hash, sd.order_index,
-            'FLIPPER.tau' as parameter,
-            f.ilk,
-            maker.public.etl_hextoint(substr(sd.prev_value, 0, 8)) as from_value,
-            maker.public.etl_hextoint(substr(sd.curr_value, 0, 8)) as to_value,
-            'DssSpell' as DssSpell
-            from edw_share.raw.storage_diffs sd, flippers f
-            where sd.contract = f.address and
-            sd.status and
-            sd.location = '5' and
-            from_value != to_value and
-            sd.block > {setup['start_block']} and sd.block <= {setup['end_block']}
-            union
-            select sd.block, sd.timestamp, sd.tx_hash, sd.order_index,
-            'FLIPPER.ttl' as parameter,
-            f.ilk,
-            maker.public.etl_hextoint(substr(sd.prev_value, 8)) as from_value,
-            maker.public.etl_hextoint(concat('0x', substr(sd.curr_value, 8))) as to_value,
-            'DssSpell' as DssSpell
-            from edw_share.raw.storage_diffs sd, flippers f
-            where sd.contract = f.address and
-            sd.status and
-            sd.location = '5' and
-            from_value != to_value and
-            sd.block > {setup['start_block']} and sd.block <= {setup['end_block']}
-            union
-            select sd.block, sd.timestamp, sd.tx_hash, sd.order_index,
-            'FLIPPER.beg' as parameter,
-            f.ilk,
-            iff(maker.public.etl_hextoint(sd.prev_value) = 0, 0, maker.public.etl_hextoint(sd.prev_value) / power(10, 18) -1) as from_value,
-            iff(maker.public.etl_hextoint(sd.curr_value) = 0, 0, maker.public.etl_hextoint(sd.curr_value) / power(10, 18) -1) as to_value,
-            'DssSpell' as DssSpell
-            from edw_share.raw.storage_diffs sd, flippers f
-            where sd.contract = f.address and
-            sd.status and
-            sd.location = '4' and
-            from_value != to_value and
-            sd.block > {setup['start_block']} and sd.block <= {setup['end_block']}
 
-            ) p join edw_share.raw.transactions t on p.tx_hash = t.tx_hash
-            order by block desc, order_index desc);
-        """
-    )
+    lerps = pd.read_sql("""
+        // Fetching all LERP addresses
+        SELECT   to_address
+        FROM     edw_share.raw.calls
+        WHERE    from_address = '0x9175561733d138326fdea86cdfdf53e92b588276'
+        AND tx_hash in (SELECT tx_hash
+        FROM   edw_share.raw.state_diffs
+        WHERE    reason = 'contract creation')
+    """, engine)
+
+
+    protocol_params['contract_type'] = protocol_params.source.apply(lambda x: 'lerp' if x in lerps.to_address.unique() else None)
+    protocol_params['contract_type'] = protocol_params.parameter.apply(lambda x: 'dc-iam' if 'iam' in x else None)
+
+        #     select sd.block, sd.timestamp, sd.tx_hash, sd.order_index,
+        #     'FLIPPER.tau' as parameter,
+        #     f.ilk,
+        #     maker.public.etl_hextoint(substr(sd.prev_value, 0, 8)) as from_value,
+        #     maker.public.etl_hextoint(substr(sd.curr_value, 0, 8)) as to_value,
+        #     'DssSpell' as DssSpell
+        #     from edw_share.raw.storage_diffs sd, flippers f
+        #     where sd.contract = f.address and
+        #     sd.status and
+        #     sd.location = '5' and
+        #     from_value != to_value and
+        #     sd.block > {setup['start_block']} and sd.block <= {setup['end_block']}
+        #     union
+        #     select sd.block, sd.timestamp, sd.tx_hash, sd.order_index,
+        #     'FLIPPER.ttl' as parameter,
+        #     f.ilk,
+        #     maker.public.etl_hextoint(substr(sd.prev_value, 8)) as from_value,
+        #     maker.public.etl_hextoint(concat('0x', substr(sd.curr_value, 8))) as to_value,
+        #     'DssSpell' as DssSpell
+        #     from edw_share.raw.storage_diffs sd, flippers f
+        #     where sd.contract = f.address and
+        #     sd.status and
+        #     sd.location = '5' and
+        #     from_value != to_value and
+        #     sd.block > {setup['start_block']} and sd.block <= {setup['end_block']}
+        #     union
+        #     select sd.block, sd.timestamp, sd.tx_hash, sd.order_index,
+        #     'FLIPPER.beg' as parameter,
+        #     f.ilk,
+        #     iff(maker.public.etl_hextoint(sd.prev_value) = 0, 0, maker.public.etl_hextoint(sd.prev_value) / power(10, 18) -1) as from_value,
+        #     iff(maker.public.etl_hextoint(sd.curr_value) = 0, 0, maker.public.etl_hextoint(sd.curr_value) / power(10, 18) -1) as to_value,
+        #     'DssSpell' as DssSpell
+        #     from edw_share.raw.storage_diffs sd, flippers f
+        #     where sd.contract = f.address and
+        #     sd.status and
+        #     sd.location = '4' and
+        #     from_value != to_value and
+            # sd.block > {setup['start_block']} and sd.block <= {setup['end_block']}
+
+            # ) p join edw_share.raw.transactions t on p.tx_hash = t.tx_hash
+            # order by block desc, order_index desc);
+    #     """
+    # )
 
     sf.execute(
         f"""
@@ -423,3 +443,5 @@ def _load(**setup):
     )
 
     return
+
+def _
