@@ -36,7 +36,7 @@ def get_barks(**setup):
 
     bark_events = sf.execute(f"""
         select block, timestamp, tx_hash, call_id,
-            concat('0x', lpad(ltrim(topic1, '0x'), 64, '0')) as topic1
+            concat('0x', lpad(ltrim(topic1, '0x'), 64, '0')) as topic1,
             concat('0x', lpad(ltrim(topic2, '0x'), 64, '0')) as topic2,
             concat('0x', lpad(ltrim(topic3, '0x'), 64, '0')) as topic3,
             log_data, order_index
