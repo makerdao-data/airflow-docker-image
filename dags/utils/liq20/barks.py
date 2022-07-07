@@ -35,10 +35,14 @@ def get_barks(**setup):
     # get bark events
 
     bark_events = sf.execute(f"""
-        select block, timestamp, tx_hash, call_id, raw_parameters::varchar, order_index
-        from edw_share.decoded.events
-        where event_name = 'Bark'
-            and contract_address = lower('0x135954d155898D42C90D2a57824C690e0c7BEf1B')
+        select block, timestamp, tx_hash, call_id,
+            concat('0x', lpad(ltrim(topic1, '0x'), 64, '0')) as topic1
+            concat('0x', lpad(ltrim(topic2, '0x'), 64, '0')) as topic2,
+            concat('0x', lpad(ltrim(topic3, '0x'), 64, '0')) as topic3,
+            log_data, order_index
+        from edw_share.raw.events
+        where topic0 = '0x85258d09e1e4ef299ff3fc11e74af99563f022d21f3f940db982229dc2a3358c'
+            and contract = lower('0x135954d155898D42C90D2a57824C690e0c7BEf1B')
             and block >= {setup['start_block']}
             and block <= {setup['end_block']}
         order by block;
@@ -46,7 +50,46 @@ def get_barks(**setup):
 
     b = list()
 
-    for block, timestamp, tx_hash, call_id, raw_parameters, order_index in bark_events:
+    for block, timestamp, tx_hash, call_id, topic1, topic2, topic3, log_data, order_index in bark_events:
+
+        raw_parameters = [
+            {
+                "name": "ilk",
+                "raw": topic1,
+                "type": "bytes32"
+            },
+            {
+                "name": "urn",
+                "raw": topic2,
+                "type": "address"
+            },
+            {
+                "name": "ink",
+                "raw": str('0x' + log_data[2:66]),
+                "type": "uint256"
+            },
+            {
+                "name": "art",
+                "raw": str('0x' + log_data[66:130]),
+                "type": "uint256"
+            },
+            {
+                "name": "due",
+                "raw": str('0x' + log_data[130:194]),
+                "type": "uint256"
+            },
+            {
+                "name": "clip",
+                "raw": str('0x' + log_data[194:258]),
+                "type": "address"
+            },
+            {
+                "name": "id",
+                "raw": topic3,
+                "type": "uint256"
+            }
+        ]
+
 
         b.append([
             block,
