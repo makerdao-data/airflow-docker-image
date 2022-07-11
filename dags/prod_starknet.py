@@ -25,7 +25,7 @@ default_args = {
 # [START instantiate_dag]
 @dag(
     default_args=default_args,
-    schedule_interval=None, #'*/30 * * * *',
+    schedule_interval='*/30 * * * *',
     start_date=datetime(2022, 7, 11, 12),
     max_active_runs=1,
     catchup=False,
