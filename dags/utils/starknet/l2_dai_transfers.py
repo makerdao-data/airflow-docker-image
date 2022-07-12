@@ -38,6 +38,8 @@ def l2_dai_transfers():
     operations = list()
     for block, timestamp, id, tx_hash, trace_id, contract, class_hash, sender, receiver, low, high, operation in l2_starknet_dai_transfers:
 
+        amount = str(low + (high << 128))
+
         operations.append([
             block,
             timestamp,
@@ -50,6 +52,7 @@ def l2_dai_transfers():
             receiver,
             low,
             high,
+            amount,
             operation
         ])
 
