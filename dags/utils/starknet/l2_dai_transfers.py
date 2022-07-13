@@ -5,7 +5,7 @@ from dags.connectors.sf import _clear_stage, _write_to_stage, _write_to_table, s
 from dags.utils.general import breadcrumb, starkcrumb
 
 
-def l2_dai_transfers():
+def l2_dai_transfers_events():
         
     max_block = sf.execute("""
         select max(block)
