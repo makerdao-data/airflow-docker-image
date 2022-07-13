@@ -142,6 +142,41 @@ def get_barks(**setup):
         ppp[ilk][block] = dict(
             price=price
         )
+    
+    sf.execute(
+        """
+            create or replace function maker.public.etl_hextostr (s string)
+            returns string language JAVASCRIPT
+            as
+            'function hexToDec(c) {
+            let charCode = c.charCodeAt(0);
+            return charCode <= 57 ? charCode - 48 : charCode - 97 + 10;
+            }
+            let str = "";
+            for (let i = 2; i < S.length; i+=2) {
+            const byte = hexToDec(S[i])*16 + hexToDec(S[i+1]);
+            if (byte > 0) {
+            str += String.fromCharCode(byte);
+            }
+            }
+            return str;';
+        """
+    )
+
+    sf.execute(
+        """
+            create or replace function maker.public.etl_hextoint (s string)
+            returns double language JAVASCRIPT
+            as
+            'if (S !== null && S !== "" && S !== "0x") {
+            _int = parseInt(S, 16);
+            }
+            else {
+            _int = 0;
+            }
+            return _int';
+        """
+    )
 
     all_b = sf.execute(f"""
         select 
