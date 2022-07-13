@@ -145,7 +145,7 @@ def get_barks(**setup):
     
     sf.execute(
         """
-            create or replace function maker.public.etl_hextostr (s string)
+            create or replace function maker.public.liq20_etl_hextostr (s string)
             returns string language JAVASCRIPT
             as
             'function hexToDec(c) {
@@ -165,7 +165,7 @@ def get_barks(**setup):
 
     sf.execute(
         """
-            create or replace function maker.public.etl_hextoint (s string)
+            create or replace function maker.public.liq20_etl_hextoint (s string)
             returns double language JAVASCRIPT
             as
             'if (S !== null && S !== "" && S !== "0x") {
@@ -182,8 +182,8 @@ def get_barks(**setup):
         select 
             tx_hash,
             concat('0x', lpad(ltrim(raw_parameters[1]['raw'], '0x'), 40, '0')) as urn,
-            maker.public.etl_hextostr(raw_parameters[0]['raw']) as ilk,
-            maker.public.etl_hextoint(raw_parameters[6]['raw']) as auction_id,
+            maker.public.liq20_etl_hextostr(raw_parameters[0]['raw']) as ilk,
+            maker.public.liq20_etl_hextoint(raw_parameters[6]['raw']) as auction_id,
             raw_parameters::varchar
         from {setup['DB']}.staging.bark
         where block >= {setup['start_block']}
