@@ -6,7 +6,7 @@ from dags.utils.starknet.escrow.tooling import *
 from dags.utils.general import breadcrumb
 
 
-def starknet_dai_escrow_events():
+def l1_dai_escrow_events():
 
     max_block = sf.execute("""
         select max(block)

@@ -6,7 +6,7 @@ from dags.utils.starknet.bridge.tooling import *
 from dags.utils.general import breadcrumb
 
 
-def starknet_dai_bridge_events():
+def l1_dai_bridge_events():
     max_block = sf.execute("""
         select max(block)
         from starknet_l1.decoded.bridge;

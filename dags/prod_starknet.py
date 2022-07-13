@@ -5,9 +5,10 @@ import snowflake.connector
 sys.path.append('/opt/airflow/')
 
 from airflow.decorators import dag, task
-from dags.utils.starknet.dai_bridge import starknet_dai_bridge_events
-from dags.utils.starknet.dai_escrow import starknet_dai_escrow_events
-from dags.utils.starknet.l2_dai_transfers import l2_dai_transfers
+from dags.utils.starknet.dai_bridge import l1_dai_bridge_events
+from dags.utils.starknet.dai_escrow import l1_dai_escrow_events
+from dags.utils.starknet.l2_dai_transfers import l2_dai_transfers_events
+from dags.utils.starknet.l2_dai_bridge import l2_dai_bridge_events
 
 # [START default_args]
 # These args will get passed on to each operator
@@ -33,29 +34,37 @@ default_args = {
 def prod_starknet():
 
     @task()
-    def dai_bridge():
+    def l1_dai_bridge():
 
-        starknet_dai_bridge_events()
+        l1_dai_bridge_events()
 
         return
 
     @task()
-    def dai_escrow():
+    def l1_dai_escrow():
 
-        starknet_dai_escrow_events()
+        l1_dai_escrow_events()
 
         return
     
     @task()
-    def dai_transfers():
+    def l2_dai_transfers():
 
-        l2_dai_transfers()
+        l2_dai_transfers_events()
+
+        return
+    
+    @task()
+    def l2_dai_bridge():
+
+        l2_dai_bridge_events()
 
         return
 
-    dai_bridge()
-    dai_escrow()
-    dai_transfers()
+    l1_dai_bridge()
+    l1_dai_escrow()
+    l2_dai_transfers()
+    l2_dai_bridge()
 
 
 prod_starknet = prod_starknet()
