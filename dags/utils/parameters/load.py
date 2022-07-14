@@ -2,7 +2,7 @@ from dags.connectors.sf import sf, connection
 import pandas as pd
 
 
-def fetch_params(engine) -> pd.DataFrame:
+def fetch_params(engine, setup) -> pd.DataFrame:
     """
     Function to fetch protocol parameters
     """
@@ -291,7 +291,7 @@ def fetch_params(engine) -> pd.DataFrame:
             'FLOPPER.ttl' as parameter,
             null as ilk,
             maker.public.etl_hextoint(right(prev_value, 12)) as from_value,
-            maker.public.etl_hextoint(right(curr_value, 12)) as to_value    
+            maker.public.etl_hextoint(right(curr_value, 12)) as to_value
             from edw_share.raw.storage_diffs
             where contract = '0xa41b6ef151e06da0e34b009b86e828308986736d' and
             location = '6' and
@@ -406,7 +406,7 @@ def fetch_params(engine) -> pd.DataFrame:
         flopper_ttl,
         dssDirectDepositAaveDai_tau_bar,
         cat_chop_dunk
-    ]).reset_index(drop=True).drop(columns='ORDER_INDEX')
+    ]).reset_index(drop=True).drop(columns='order_index')
 
     return protocol_params
 
@@ -421,12 +421,12 @@ def apply_source_types(protocol_params: pd.DataFrame, engine) -> pd.DataFrame:
 
     # Iterate through rows and populate source column
     for idx in range(len(protocol_params)):
-        if 'IAM' in protocol_params.loc[idx, 'PARAMETER']:
-            protocol_params.loc[idx, 'SOURCE_TYPE'] = 'DC-IAM'
-        elif protocol_params.loc[idx, 'SOURCE'] in lerps.TO_ADDRESS.values:
-            protocol_params.loc[idx, 'SOURCE_TYPE'] = 'lerp'
+        if 'IAM' in protocol_params.loc[idx, 'parameter']:
+            protocol_params.loc[idx, 'source_type'] = 'DC-IAM'
+        elif protocol_params.loc[idx, 'source'] in lerps.to_address.values:
+            protocol_params.loc[idx, 'source_type'] = 'lerp'
         else:
-            protocol_params.loc[idx, 'SOURCE_TYPE'] = 'dsspell'
+            protocol_params.loc[idx, 'source_type'] = 'dsspell'
 
     return protocol_params
 
@@ -457,21 +457,23 @@ def apply_sources(protocol_params: pd.DataFrame, engine) -> pd.DataFrame:
 
     # Fetch contract sources
     sources = pd.read_sql(
-        f"""select tx_hash, to_address from edw_share.raw.transactions where tx_hash in ({','.join(list(map(lambda x: f"'{x}'", protocol_params.TX_HASH.unique())))})""",
+        f"""select tx_hash, to_address from edw_share.raw.transactions where tx_hash in ({','.join(list(map(lambda x: f"'{x}'", protocol_params.tx_hash.unique())))})""",
         engine
     )
 
     # Apply contract sources and create source type column
-    protocol_params['SOURCE'] = protocol_params.TX_HASH.apply(lambda x: sources[sources.TX_HASH == x].values[0][1])
-    protocol_params['SOURCE_TYPE'] = None
+    protocol_params['source'] = protocol_params.tx_hash.apply(
+        lambda x: sources[sources.tx_hash == x].values[0][1]
+    )
+    protocol_params['source_type'] = None
 
     return protocol_params
 
 
-def _load(engine, **setup):
+def _load(engine, setup):
 
     # Fetch result dataframe
-    protocol_params = fetch_params(engine)
+    protocol_params = fetch_params(engine, setup)
 
     # Apply sources
     protocol_params = apply_sources(protocol_params, engine)
@@ -479,11 +481,7 @@ def _load(engine, **setup):
     # Apply source types
     protocol_params = apply_source_types(protocol_params, engine)
 
-    sf.execute(
-        f"""
-            insert into maker.scheduler.parameters (load_id, start_block, end_block)
-            values('{setup['load_id']}', {setup['start_block']}, {setup['end_block']});
-        """
-    )
+    # Write to table
+    protocol_params.to_sql('test_parameters', conn, schema='maker.public', index=False, if_exists='append')
 
     return
