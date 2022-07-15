@@ -11,7 +11,7 @@
 #  limitations under the License.
 
 import snowflake.connector
-from sqlalchemy.engine.url import URL
+from snowflake.sqlalchemy import URL
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
 from random import randint
