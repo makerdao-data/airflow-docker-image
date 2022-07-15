@@ -1,4 +1,4 @@
-from dags.connectors.sf import sf, connection
+from dags.connectors.sf import sf, sa
 import pandas as pd
 
 
@@ -74,7 +74,7 @@ def fetch_params(engine, setup) -> pd.DataFrame:
 
     vat_line_dust = pd.read_sql(f"""
             // VAT parameters (line, dust)
-            select block, timestamp, tx_hash, order_index,
+            select block, timestamp, tx_hash,
             iff(substr(location, length(location)) = '3', 'VAT.ilks.line', 'VAT.ilks.dust') as parameter,
             maker.public.etl_hextostr(substr(location, 3, 42)) as ilk,
             maker.public.etl_hextoint(prev_value) / pow(10, 45) as from_value,
@@ -88,7 +88,7 @@ def fetch_params(engine, setup) -> pd.DataFrame:
 
     dciam_line_gap = pd.read_sql(f"""
             // DC-IAM parameters (line, gap)
-            select block, timestamp, tx_hash, order_index,
+            select block, timestamp, tx_hash,
             case substr(location, length(location))
             when '0' then 'DC-IAM.ilks.line'
             when '1' then 'DC-IAM.ilks.gap'
@@ -105,7 +105,7 @@ def fetch_params(engine, setup) -> pd.DataFrame:
 
     dciam_ttl = pd.read_sql(f"""
             // DC-IAM parameters (ttl)
-            select block, timestamp, tx_hash, order_index,
+            select block, timestamp, tx_hash,
             'DC-IAM.ilks.ttl'as parameter,
             maker.public.etl_hextostr(substr(location, 3, 42)) as ilk,
             maker.public.etl_hextoint(right(prev_value, 12)) as from_value,
@@ -120,7 +120,7 @@ def fetch_params(engine, setup) -> pd.DataFrame:
 
     spotter_mat = pd.read_sql(f"""
             // SPOTTER parameters (mat)
-            select block, timestamp, tx_hash, order_index,
+            select block, timestamp, tx_hash,
             'SPOTTER.ilks.mat' as parameter,
             maker.public.etl_hextostr(substr(location, 3, 42)) as ilk,
             maker.public.etl_hextoint(prev_value) / pow(10, 27) as from_value,
@@ -133,7 +133,7 @@ def fetch_params(engine, setup) -> pd.DataFrame:
 
     jug_duty = pd.read_sql(f"""
             // JUG parameters (duty)
-            select block, timestamp, tx_hash, order_index,
+            select block, timestamp, tx_hash,
             'JUG.ilks.duty' as parameter,
             maker.public.etl_hextostr(substr(location, 3, 42)) as ilk,
             iff(maker.public.etl_hextoint(prev_value) > 0, round(pow(maker.public.etl_hextoint(prev_value) / pow(10, 27), 31536000), 4) - 1, 0)
@@ -149,7 +149,7 @@ def fetch_params(engine, setup) -> pd.DataFrame:
 
     dog_chop_hole = pd.read_sql(f"""
             // DOG parameters (chop, hole)
-            select block, timestamp, tx_hash, order_index,
+            select block, timestamp, tx_hash,
             case substr(location, length(location))
             when '1' then 'DOG.ilks.chop'
             when '2' then 'DOG.ilks.hole'
@@ -226,7 +226,7 @@ def fetch_params(engine, setup) -> pd.DataFrame:
 
     vow_hump_sump_dump_bump = pd.read_sql(f"""
             // VOW parameters (hump, sump, dump, bump)
-            select block, timestamp, tx_hash, order_index,
+            select block, timestamp, tx_hash,
             case location
             when '8' then 'VOW.dump'
             when '9' then 'VOW.sump'
@@ -244,7 +244,7 @@ def fetch_params(engine, setup) -> pd.DataFrame:
 
     flapper_beg = pd.read_sql(f"""
             // FLAPPER parameters (beg)
-            select block, timestamp, tx_hash, order_index,
+            select block, timestamp, tx_hash,
             'FLAPPER.beg' as parameter,
             null as ilk,
             iff(maker.public.etl_hextoint(prev_value) = 0, 0, maker.public.etl_hextoint(prev_value) / pow(10, 18) - 1) as from_value,
@@ -257,7 +257,7 @@ def fetch_params(engine, setup) -> pd.DataFrame:
 
     flapper_ttl = pd.read_sql(f"""
             // FLAPPER parameters (ttl)
-            select block, timestamp, tx_hash, order_index,
+            select block, timestamp, tx_hash,
             'FLAPPER.ttl' as parameter,
             null as ilk,
             maker.public.etl_hextoint(right(prev_value, 12)) as from_value,
@@ -271,7 +271,7 @@ def fetch_params(engine, setup) -> pd.DataFrame:
 
     flopper_bed_pad = pd.read_sql(f"""
             // FLOPPER parameters (bed, pad)
-            select block, timestamp, tx_hash, order_index,
+            select block, timestamp, tx_hash,
             case location
             when '4' then 'FLOPPER.beg'
             when '5' then 'FLOPPER.pad'
@@ -287,7 +287,7 @@ def fetch_params(engine, setup) -> pd.DataFrame:
 
     flopper_ttl = pd.read_sql(f"""
             // FLOPPER parameters (ttl)
-            select block, timestamp, tx_hash, order_index,
+            select block, timestamp, tx_hash,
             'FLOPPER.ttl' as parameter,
             null as ilk,
             maker.public.etl_hextoint(right(prev_value, 12)) as from_value,
@@ -301,7 +301,7 @@ def fetch_params(engine, setup) -> pd.DataFrame:
 
     dssDirectDepositAaveDai_tau_bar = pd.read_sql(f"""
             // D3M DIRECT-AAVEV2-DAI (DssDirectDepositAaveDai) parameters (tau, bar)
-            select block, timestamp, tx_hash, order_index,
+            select block, timestamp, tx_hash,
             case location
             when '1' then 'D3M.tau'
             when '2' then 'D3M.bar'
@@ -324,7 +324,7 @@ def fetch_params(engine, setup) -> pd.DataFrame:
 
     cat_chop_dunk = pd.read_sql(f"""
             // Cat Chop Dunk
-            select block, timestamp, tx_hash, order_index,
+            select block, timestamp, tx_hash,
             case substr(location, length(location))
             when '1' then 'CAT.ilks.chop'
             when '2' then 'CAT.ilks.dunk'
@@ -406,7 +406,7 @@ def fetch_params(engine, setup) -> pd.DataFrame:
         flopper_ttl,
         dssDirectDepositAaveDai_tau_bar,
         cat_chop_dunk
-    ]).reset_index(drop=True).drop(columns='order_index')
+    ]).reset_index(drop=True)
 
     return protocol_params
 
@@ -482,6 +482,6 @@ def _load(engine, setup):
     protocol_params = apply_source_types(protocol_params, engine)
 
     # Write to table
-    protocol_params.to_sql('test_parameters', conn, schema='maker.public', index=False, if_exists='append')
+    protocol_params.to_sql('test_parameters', sa, schema='maker.public', index=False, if_exists='append')
 
     return
