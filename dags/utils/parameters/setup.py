@@ -4,13 +4,15 @@ from dags.connectors.sf import sf
 
 def _setup():
 
-    fallback_block = 8928152
+    fallback_block = 8928151
     load_id = datetime.utcnow().__str__()[:19]
+    scheduler = 'maker.scheduler.test_parameters'
+    target_db = 'maker.public.test_parameters_v2'
 
     start_block = sf.execute(
         f"""
             SELECT MAX(end_block)
-            FROM maker.scheduler.parameters;
+            FROM {scheduler};
         """
     ).fetchone()
 
@@ -30,11 +32,15 @@ def _setup():
         end_block = 0
     else:
         end_block = end_block[0]
+    
+    end_block = 10392093
 
     setup = {
         'load_id': load_id,
         'start_block': start_block,
         'end_block': end_block,
+        'scheduler': scheduler,
+        'target_db': target_db
     }
 
     return setup

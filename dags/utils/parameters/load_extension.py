@@ -1,11 +1,11 @@
 import sys
-sys.path.append('/opt/airflow/')
 import math
 import datetime
 import snowflake
 import pandas as pd
 import numpy as np
 import web3
+sys.path.append('/opt/airflow/')
 from dags.connectors.sf import _write_to_stage, _write_to_table, _clear_stage
 
 
@@ -242,6 +242,6 @@ def upload_new_params(engine: snowflake.connector.connection.SnowflakeConnection
     
     result = get_new_params(engine, chain, setup)
     pattern = _write_to_stage(engine.cursor(), list(result.to_numpy()), f"MAKER.PUBLIC.PARAMETERS_STORAGE") 
-    _write_to_table(engine.cursor(), f"MAKER.PUBLIC.PARAMETERS_STORAGE",f"MAKER.PUBLIC.PARAMETERS", pattern)
+    _write_to_table(engine.cursor(), f"MAKER.PUBLIC.PARAMETERS_STORAGE",f"{setup['target_db']}", pattern)
     _clear_stage(engine.cursor(), f"MAKER.PUBLIC.PARAMETERS_STORAGE", pattern)
     return

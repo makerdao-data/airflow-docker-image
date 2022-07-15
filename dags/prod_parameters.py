@@ -26,7 +26,7 @@ default_args = {
 # [START instantiate_dag]
 @dag(
     default_args=default_args,
-    schedule_interval='15 */6 * * *',
+    schedule_interval=None, #'15 */6 * * *',
     start_date=datetime(2022, 2, 17, 10),
     max_active_runs=1,
     catchup=False,
@@ -55,7 +55,7 @@ def prod_parameters_load():
         return
 
     setup = setup()
-    load_ext(setup, setup)
+    # load_ext(setup, setup)
     load(setup, setup, engine)
 
 
