@@ -4,6 +4,7 @@ import sys
 sys.path.append('/opt/airflow/')
 from dags.connectors.sf import sf, sa
 from dags.utils.parameters.load_clippers_flippers import load_clips_flips
+from dags.connectors.sf import _write_to_stage, _write_to_table, _clear_stage
 
 
 def fetch_params(engine, setup) -> pd.DataFrame:
@@ -38,10 +39,16 @@ def fetch_params(engine, setup) -> pd.DataFrame:
             returns varchar language JAVASCRIPT
             as
             'if (S !== null && S !== "" && S !== "0x") {
-            _int = BigInt(S, 16);
+                if (S.substring(0,2) !== "0x") {
+                    _int = BigInt("0x" + S, 16);
+                }
+                else {
+                    _int = BigInt(S, 16);
+                }
+                
             }
             else {
-            _int = 0;
+                _int = 0;
             }
             return _int';
         """
@@ -52,8 +59,8 @@ def fetch_params(engine, setup) -> pd.DataFrame:
             select block, timestamp, tx_hash,
             iff(substr(location, length(location)) = '3', 'VAT.ilks.line', 'VAT.ilks.dust') as parameter,
             maker.public.prot_params_etl_hextostr(substr(location, 3, 42)) as ilk,
-            maker.public.prot_params_etl_hextobigint(prev_value)::integer / pow(10, 45) as from_value,
-            maker.public.prot_params_etl_hextobigint(curr_value)::integer / pow(10, 45) as to_value
+            maker.public.prot_params_etl_hextobigint(prev_value) / pow(10, 45)::float as from_value,
+            maker.public.prot_params_etl_hextobigint(curr_value) / pow(10, 45)::float as to_value
             from edw_share.raw.storage_diffs
             where contract = '0x35d1b3f3d7966a1dfe207aa4514c12a259a0492b' and
             location like '2[%' and
@@ -69,8 +76,8 @@ def fetch_params(engine, setup) -> pd.DataFrame:
             when '1' then 'DC-IAM.ilks.gap'
             end as parameter,
             maker.public.prot_params_etl_hextostr(substr(location, 3, 42)) as ilk,
-            maker.public.prot_params_etl_hextobigint(prev_value)::integer / pow(10, 45) as from_value,
-            maker.public.prot_params_etl_hextobigint(curr_value)::integer / pow(10, 45) as to_value
+            maker.public.prot_params_etl_hextobigint(prev_value) / pow(10, 45)::float  as from_value,
+            maker.public.prot_params_etl_hextobigint(curr_value) / pow(10, 45)::float  as to_value
             from edw_share.raw.storage_diffs
             where contract = '0xc7bdd1f2b16447dcf3de045c4a039a60ec2f0ba3' and
             location like '0[%' and
@@ -83,8 +90,10 @@ def fetch_params(engine, setup) -> pd.DataFrame:
             select block, timestamp, tx_hash,
             'DC-IAM.ilks.ttl'as parameter,
             maker.public.prot_params_etl_hextostr(substr(location, 3, 42)) as ilk,
-            maker.public.prot_params_etl_hextobigint(right(prev_value, 12)) as from_value,
-            maker.public.prot_params_etl_hextobigint(right(curr_value, 12)) as to_value
+            case when left(right(prev_value, 12), 2) = '0x' then maker.public.prot_params_etl_hextobigint(right(prev_value, 12))
+            else maker.public.prot_params_etl_hextobigint(concat('0x', right(prev_value, 12))) end as from_value,
+            case when left(right(curr_value, 12), 2) = '0x' then maker.public.prot_params_etl_hextobigint(right(curr_value, 12))
+            else maker.public.prot_params_etl_hextobigint(concat('0x', right(curr_value, 12))) end as to_value
             from edw_share.raw.storage_diffs
             where contract = '0xc7bdd1f2b16447dcf3de045c4a039a60ec2f0ba3' and
             location like '0[%' and
@@ -111,9 +120,9 @@ def fetch_params(engine, setup) -> pd.DataFrame:
             select block, timestamp, tx_hash,
             'JUG.ilks.duty' as parameter,
             maker.public.prot_params_etl_hextostr(substr(location, 3, 42)) as ilk,
-            iff(maker.public.prot_params_etl_hextobigint(prev_value)::integer > 0, round(pow(maker.public.prot_params_etl_hextobigint(prev_value)::integer / pow(10, 27), 31536000), 4) - 1, 0)
+            iff(maker.public.prot_params_etl_hextobigint(prev_value)::integer > 0, round(pow(maker.public.prot_params_etl_hextobigint(prev_value) / pow(10, 27), 31536000), 4) - 1, 0)
             as from_value,
-            iff(maker.public.prot_params_etl_hextobigint(curr_value)::integer > 0, round(pow(maker.public.prot_params_etl_hextobigint(curr_value)::integer / pow(10, 27), 31536000), 4) - 1, 0)
+            iff(maker.public.prot_params_etl_hextobigint(curr_value)::integer > 0, round(pow(maker.public.prot_params_etl_hextobigint(curr_value) / pow(10, 27), 31536000), 4) - 1, 0)
             as to_value
             from edw_share.raw.storage_diffs
             where contract = '0x19c0976f590d67707e62397c87829d896dc0f1f1' and
@@ -132,11 +141,11 @@ def fetch_params(engine, setup) -> pd.DataFrame:
             maker.public.prot_params_etl_hextostr(substr(location, 3, 42)) as ilk,
             case substr(location, length(location))
             when '1' then iff(maker.public.prot_params_etl_hextobigint(prev_value)::integer = 0, 0, maker.public.prot_params_etl_hextobigint(prev_value)::integer / pow(10, 18) - 1)
-            else maker.public.prot_params_etl_hextobigint(prev_value)::integer / pow(10, 45)
+            else maker.public.prot_params_etl_hextobigint(prev_value) / pow(10, 45)::float 
             end as from_value,
             case substr(location, length(location))
             when '1' then iff(maker.public.prot_params_etl_hextobigint(curr_value)::integer = 0, 0, maker.public.prot_params_etl_hextobigint(curr_value)::integer / pow(10, 18) - 1)
-            else maker.public.prot_params_etl_hextobigint(curr_value)::integer / pow(10, 45)
+            else maker.public.prot_params_etl_hextobigint(curr_value) / pow(10, 45)::float 
             end as to_value
             from edw_share.raw.storage_diffs
             where contract = '0x135954d155898d42c90d2a57824c690e0c7bef1b' and
@@ -155,12 +164,12 @@ def fetch_params(engine, setup) -> pd.DataFrame:
             end as parameter,
             c.ilk,
             case substr(d.location, length(d.location))
-            when '6' then maker.public.prot_params_etl_hextobigint(d.prev_value)::integer
-            else maker.public.prot_params_etl_hextobigint(d.prev_value)::integer / pow(10, 27)
+            when '6' then maker.public.prot_params_etl_hextobigint(d.prev_value)
+            else maker.public.prot_params_etl_hextobigint(d.prev_value) / pow(10, 27)
             end as from_value,
             case substr(d.location, length(d.location))
-            when '6' then maker.public.prot_params_etl_hextobigint(d.curr_value)::integer
-            else maker.public.prot_params_etl_hextobigint(d.curr_value)::integer / pow(10, 27)
+            when '6' then maker.public.prot_params_etl_hextobigint(d.curr_value)
+            else maker.public.prot_params_etl_hextobigint(d.curr_value) / pow(10, 27)
             end as to_value
             from edw_share.raw.storage_diffs d, maker.internal.clippers c
             where d.contract = c.address and
@@ -170,34 +179,36 @@ def fetch_params(engine, setup) -> pd.DataFrame:
             d.status;""", engine)
     
     clipper_chip = pd.read_sql(f"""
-            // CLIPPERs parameters (chip)
-            select d.block, d.timestamp, d.tx_hash,
-            'CLIPPER.chip' as parameter,
-            c.ilk,
-            maker.public.prot_params_etl_hextobigint(right(d.prev_value, 16))::integer / pow(10, 18) as from_value,
-            maker.public.prot_params_etl_hextobigint(right(d.curr_value, 16))::integer / pow(10, 18) as to_value
-            from edw_share.raw.storage_diffs d, maker.internal.clippers c
-            where d.contract = c.address and
-            d.location = '8' and
-            from_value != to_value and
-            d.block > {setup['start_block']} and d.block <= {setup['end_block']} and
-            d.status;""", engine)
+        // CLIPPERs parameters (chip)
+        select d.block, d.timestamp, d.tx_hash,
+        'CLIPPER.chip' as parameter,
+        c.ilk,
+        case when left(right(d.prev_value, 16), 2) != '0x' then maker.public.prot_params_etl_hextobigint(concat('0x', right(d.prev_value, 16)))::integer / pow(10, 18)
+        else maker.public.prot_params_etl_hextobigint(right(d.prev_value, 16))::integer / pow(10, 18) end as from_value,
+        case when left(right(d.curr_value, 16), 2) != '0x' then maker.public.prot_params_etl_hextobigint(concat('0x', right(d.curr_value, 16)))::integer / pow(10, 18)
+        else maker.public.prot_params_etl_hextobigint(right(d.curr_value, 16)) / pow(10, 18) end as to_value
+        from edw_share.raw.storage_diffs d, maker.internal.clippers c
+        where d.contract = c.address and
+        d.location = '8' and
+        from_value != to_value and
+        d.block > {setup['start_block']} and d.block <= {setup['end_block']} and
+        d.status;""", engine)
+
     
     clipper_tip = pd.read_sql(f"""
             // CLIPPERs parameters (tip)
             select d.block, d.timestamp, d.tx_hash,
             'CLIPPER.tip' as parameter,
             c.ilk,
-            maker.public.prot_params_etl_hextobigint(substr(d.prev_value, 1, len(d.prev_value)-16))::integer / pow(10, 45) as from_value,
-            maker.public.prot_params_etl_hextobigint(substr(d.curr_value, 1, len(d.curr_value)-16))::integer / pow(10, 45) as to_value
+            maker.public.prot_params_etl_hextobigint(substr(d.prev_value, 1, len(d.prev_value)-16)) / pow(10, 45)::float  as from_value,
+            maker.public.prot_params_etl_hextobigint(substr(d.curr_value, 1, len(d.curr_value)-16)) / pow(10, 45)::float  as to_value
             from edw_share.raw.storage_diffs d, maker.internal.clippers c
             where d.contract = c.address and
             d.location = '8' and
             d.block > {setup['start_block']} and d.block <= {setup['end_block']} and
             from_value != to_value and
             d.status;""", engine)
-    
-    # to big int
+
     vow_hump_sump_dump_bump = pd.read_sql(f"""
             // VOW parameters (hump, sump, dump, bump)
             select block, timestamp, tx_hash,
@@ -208,13 +219,28 @@ def fetch_params(engine, setup) -> pd.DataFrame:
             when '11' then 'VOW.hump'
             end as parameter,
             null as ilk,
-            maker.public.prot_params_etl_hextobigint(prev_value)::integer / pow(10, 45) as from_value,
-            maker.public.prot_params_etl_hextobigint(curr_value)::integer / pow(10, 45) as to_value
+            maker.public.prot_params_etl_hextobigint(prev_value) / pow(10, 45)::float  as from_value,
+            maker.public.prot_params_etl_hextobigint(curr_value) / pow(10, 45)::float  as to_value
             from edw_share.raw.storage_diffs
             where contract = '0xa950524441892a31ebddf91d3ceefa04bf454466' and
             location in ('8', '9', '10', '11') and
             block > {setup['start_block']} and block <= {setup['end_block']} and
             status""", engine)
+
+    vow_wait = pd.read_sql(f"""
+        // VOW.wait
+        select block, timestamp, tx_hash,
+        case location
+        when '7' then 'VOW.wait'
+        end as parameter,
+        null as ilk,
+        maker.public.prot_params_etl_hextobigint(prev_value) as from_value,
+        maker.public.prot_params_etl_hextobigint(curr_value) as to_value
+        from edw_share.raw.storage_diffs
+        where contract = '0xa950524441892a31ebddf91d3ceefa04bf454466' and
+        location in ('7') and
+        block > {setup['start_block']} and block <= {setup['end_block']} and
+        status;""", engine)
 
     flapper_beg = pd.read_sql(f"""
             // FLAPPER parameters (beg)
@@ -296,7 +322,6 @@ def fetch_params(engine, setup) -> pd.DataFrame:
             block > {setup['start_block']} and block <= {setup['end_block']} and
             status""", engine)
 
-    # too big int
     cat_chop_dunk = pd.read_sql(f"""
             // Cat Chop Dunk
             select block, timestamp, tx_hash,
@@ -307,11 +332,11 @@ def fetch_params(engine, setup) -> pd.DataFrame:
             maker.public.prot_params_etl_hextostr(substr(location, 3, 42)) as ilk,
             case substr(location, length(location))
             when '1' then iff(maker.public.prot_params_etl_hextobigint(prev_value)::integer = 0, 0, maker.public.prot_params_etl_hextobigint(prev_value)::integer / power(10, 18) -1)
-            when '2' then (maker.public.prot_params_etl_hextobigint(prev_value)::integer / power(10, 45))
+            when '2' then (maker.public.prot_params_etl_hextobigint(prev_value) / power(10, 45))
             end as from_value,
             case substr(location, length(location))
             when '1' then iff(maker.public.prot_params_etl_hextobigint(curr_value)::integer = 0, 0, maker.public.prot_params_etl_hextobigint(curr_value)::integer / power(10, 18) -1)
-            when '2' then (maker.public.prot_params_etl_hextobigint(curr_value)::integer / power(10, 45))
+            when '2' then (maker.public.prot_params_etl_hextobigint(curr_value) / power(10, 45))
             end as to_value
             from edw_share.raw.storage_diffs
             where contract = lower('0xa5679C04fc3d9d8b0AaB1F0ab83555b301cA70Ea') and
@@ -337,8 +362,8 @@ def fetch_params(engine, setup) -> pd.DataFrame:
             select sd.block, sd.timestamp, sd.tx_hash,
             'FLIPPER.ttl' as parameter,
             f.ilk,
-            iff(maker.public.prot_params_etl_hextobigint(concat('0x', right(sd.prev_value, 8))) = 0, 0, maker.public.prot_params_etl_hextobigint(concat('0x', right(sd.prev_value, 8))))::integer as from_value,
-            iff(maker.public.prot_params_etl_hextobigint(concat('0x', right(sd.curr_value, 8))) = 0, 0, maker.public.prot_params_etl_hextobigint(concat('0x', right(sd.curr_value, 8))))::integer as to_value
+            iff(maker.public.prot_params_etl_hextobigint(right(prev_value, 8)) = 0, 0, maker.public.prot_params_etl_hextobigint(right(prev_value, 8)))::integer as from_value,
+            iff(maker.public.prot_params_etl_hextobigint(right(curr_value, 8)) = 0, 0, maker.public.prot_params_etl_hextobigint(right(curr_value, 8)))::integer as to_value
             from edw_share.raw.storage_diffs sd, maker.internal.flippers f
             where sd.contract = f.address and
             sd.status and
@@ -350,8 +375,8 @@ def fetch_params(engine, setup) -> pd.DataFrame:
             select sd.block, sd.timestamp, sd.tx_hash,
             'FLIPPER.beg' as parameter,
             f.ilk,
-            iff(maker.public.prot_params_etl_hextobigint(sd.prev_value)::integer = 0, 0, maker.public.prot_params_etl_hextobigint(sd.prev_value)::integer / power(10, 18) -1) as from_value,
-            iff(maker.public.prot_params_etl_hextobigint(sd.curr_value)::integer = 0, 0, maker.public.prot_params_etl_hextobigint(sd.curr_value)::integer / power(10, 18) -1) as to_value
+            maker.public.prot_params_etl_hextobigint(sd.prev_value) / power(10, 18) -1 as from_value,
+            maker.public.prot_params_etl_hextobigint(sd.curr_value) / power(10, 18) -1 as to_value
             from edw_share.raw.storage_diffs sd, maker.internal.flippers f
             where sd.contract = f.address and
             sd.status and
@@ -360,10 +385,9 @@ def fetch_params(engine, setup) -> pd.DataFrame:
             from_value != to_value;""", engine)
     
     flopper_tau = pd.read_sql(f"""
-            select block, timestamp, tx_hash, null as ilk,
-            maker.public.prot_params_etl_hextobigint(concat('0x', left(substr(prev_value, 3), 6)))::integer as from_value,
-            maker.public.prot_params_etl_hextobigint(concat('0x', left(substr(curr_value, 3), 6)))::integer as to_value,
-            'FLOPPER.tau' as parameter
+            select block, timestamp, tx_hash, 'FLOPPER.tau' as parameter, null as ilk,
+            maker.public.prot_params_etl_hextobigint(left(prev_value, 8))::integer as from_value,
+            maker.public.prot_params_etl_hextobigint(left(curr_value, 8))::integer as to_value
             from edw_share.raw.storage_diffs 
                 where LOCATION = '6' 
                 and contract = '0xa41b6ef151e06da0e34b009b86e828308986736d'
@@ -372,10 +396,9 @@ def fetch_params(engine, setup) -> pd.DataFrame:
                 and status;""", engine)
     
     flapper_tau = pd.read_sql(f"""
-            select block, timestamp, tx_hash, null as ilk,
-            maker.public.prot_params_etl_hextobigint(concat('0x', left(substr(prev_value, 3), 6)))::integer as from_value,
-            maker.public.prot_params_etl_hextobigint(concat('0x', left(substr(curr_value, 3), 6)))::integer as to_value,
-            curr_value, 'FLAPPER.tau' as parameter
+            select block, timestamp, tx_hash, 'FLAPPER.tau' as parameter, null as ilk,
+            maker.public.prot_params_etl_hextobigint(left(prev_value, 8))::integer as from_value,
+            maker.public.prot_params_etl_hextobigint(left(curr_value, 8))::integer as to_value
             from edw_share.raw.storage_diffs 
                 where contract = '0xc4269cc7acdedc3794b221aa4d9205f564e27f0d' 
                 and location = '5'
@@ -384,10 +407,9 @@ def fetch_params(engine, setup) -> pd.DataFrame:
                 and status;""", engine)
     
     esm_min = pd.read_sql(f"""
-            select block, timestamp, tx_hash, null as ilk,
+            select block, timestamp, tx_hash, 'ESM.min' as parameter, null as ilk,
             maker.public.prot_params_etl_hextobigint(prev_value)::integer / power(10,18) as from_value,
-            maker.public.prot_params_etl_hextobigint(curr_value)::integer / power(10,18) as to_value,
-            'ESM.min' as parameter
+            maker.public.prot_params_etl_hextobigint(curr_value)::integer / power(10,18) as to_value
             from edw_share.raw.storage_diffs 
                 where contract = '0x09e05ff6142f2f9de8b6b65855a1d56b6cfe4c58' 
                 and location = '3'
@@ -397,16 +419,16 @@ def fetch_params(engine, setup) -> pd.DataFrame:
     
     psm_tin_tout = pd.read_sql(f"""
             select block, timestamp, tx_hash, case
+            when location = '1' then 'PSM.tin'
+            when location = '2' then 'PSM.tout'
+            end as parameter,
+            case
             when contract = '0x961ae24a1ceba861d1fdf723794f6024dc5485cf' then 'PSM-USDP-A'
             when contract = '0x89b78cfa322f6c5de0abceecab66aee45393cc5a' then 'PSM-USDC-A'
             when contract = '0x204659b2fd2ad5723975c362ce2230fba11d3900' then 'PSM-GUSD-A'
             end as ilk,
             maker.public.prot_params_etl_hextobigint(prev_value)::integer / power(10,18) as from_value,
-            maker.public.prot_params_etl_hextobigint(curr_value)::integer / power(10,18) as to_value,
-            case
-            when location = '1' then 'PSM.tin'
-            when location = '2' then 'PSM.tout'
-            end as parameter
+            maker.public.prot_params_etl_hextobigint(curr_value)::integer / power(10,18) as to_value
             from edw_share.raw.storage_diffs 
                 where contract in ('0x961ae24a1ceba861d1fdf723794f6024dc5485cf', '0x89b78cfa322f6c5de0abceecab66aee45393cc5a', '0x204659b2fd2ad5723975c362ce2230fba11d3900')
                 and location in ('1', '2')
@@ -415,10 +437,9 @@ def fetch_params(engine, setup) -> pd.DataFrame:
                 and status;""", engine)
     
     dspause_delay = pd.read_sql(f"""
-            select block, timestamp, tx_hash, null as ilk,
+            select block, timestamp, tx_hash, 'DSPAUSE.delay' as parameter, null as ilk,
             maker.public.prot_params_etl_hextobigint(prev_value)::integer as from_value,
-            maker.public.prot_params_etl_hextobigint(curr_value)::integer as to_value,
-            'DSPAUSE.delay' as parameter
+            maker.public.prot_params_etl_hextobigint(curr_value)::integer as to_value
             from edw_share.raw.storage_diffs 
                 where contract = '0xbe286431454714f511008713973d3b053a2d38f3' 
                 and location = '4'
@@ -428,13 +449,15 @@ def fetch_params(engine, setup) -> pd.DataFrame:
             """, engine)
     
     end_wait = pd.read_sql(f"""
-            select block, timestamp, tx_hash, null as ilk,
-            maker.public.prot_params_etl_hextobigint(prev_value)::integer,
-            maker.public.prot_params_etl_hextobigint(curr_value)::integer,
-            'END.wait' as parameter
+            select block, timestamp, tx_hash, 'END.wait' as parameter, null as ilk,
+            maker.public.prot_params_etl_hextobigint(prev_value)::integer as from_value,
+            maker.public.prot_params_etl_hextobigint(curr_value)::integer as to_value
             from edw_share.raw.storage_diffs 
                 where contract = '0xbb856d1742fd182a90239d7ae85706c2fe4e5922' 
-                and location = '9';""", engine)
+                and location = '9'
+                and status
+                and from_value != to_value
+                and block > {setup['start_block']} and block <= {setup['end_block']};""", engine)
 
     # Concatenate results into one df and return
     protocol_params: pd.DataFrame = pd.concat([
@@ -448,6 +471,7 @@ def fetch_params(engine, setup) -> pd.DataFrame:
         clipper_chip,
         clipper_tip,
         vow_hump_sump_dump_bump,
+        vow_wait,
         flapper_beg,
         flapper_ttl,
         flopper_bed_pad,
@@ -544,7 +568,44 @@ def _load(engine, **setup):
     protocol_params = apply_source_types(protocol_params, engine)
 
     # Write to table
-    protocol_params.to_sql(f"""{setup['target_db'].split('.')[2]}""", sa, schema=f"""{setup['target_db'].split('.')[0] + '.' + setup['target_db'].split('.')[1]}""", index=False, if_exists='append')
+    # protocol_params.to_sql(f"""{setup['target_db'].split('.')[2]}""", sa, schema=f"""{setup['target_db'].split('.')[0] + '.' + setup['target_db'].split('.')[1]}""", index=False, if_exists='append')
+
+    if not protocol_params.empty:
+        pp = list()
+        # {
+        # 'BLOCK': 13551743, 
+        # 'TIMESTAMP': datetime.datetime(2021, 11, 4, 18, 10, 38), 
+        # 'TX_HASH': '0x5f4de74b2f02b5241141d7510f3d606983937fd68e19f94b1c7cd6f179a185de', 
+        # 'PARAMETER': 'VAT.ilks.line', 
+        # 'ILK': 'ETH-A', 
+        # 'FROM_VALUE': 2873530165.138446, 
+        # 'TO_VALUE': 2875565887.508294, 
+        # 'SOURCE': '0x315ba6fbd305fcc41d0febe6698c4144c903c24a', 
+        # 'SOURCE_TYPE': 'dsspell'
+        # }
+
+        # for block, timestamp, tx_hash, parameter, ilk, from_value, to_value, source, source_type in protocol_params.values.tolist():
+        for d in protocol_params.to_dict('records'):
+            pp.append([
+                int(d['BLOCK']),
+                d['TIMESTAMP'].__str__()[:19],
+                d['TX_HASH'],
+                d['PARAMETER'],
+                d['ILK'],
+                float(d['FROM_VALUE']),
+                float(d['TO_VALUE']),
+                d['SOURCE'],
+                d['SOURCE_TYPE']
+            ])
+        pattern = _write_to_stage(sf, pp, f"MAKER.PUBLIC.PARAMETERS_STORAGE")
+        if pattern:
+            _write_to_table(
+                sf,
+                f"MAKER.PUBLIC.PARAMETERS_STORAGE",
+                f"{setup['target_db'].split('.')[0] + '.' + setup['target_db'].split('.')[1]}.{setup['target_db'].split('.')[2]}",
+                pattern,
+            )
+            _clear_stage(sf, f"MAKER.PUBLIC.PARAMETERS_STORAGE", pattern)
 
     sf.execute(
         f"""

@@ -32,8 +32,6 @@ def _setup():
         end_block = 0
     else:
         end_block = end_block[0]
-    
-    end_block = 10392093
 
     setup = {
         'load_id': load_id,
