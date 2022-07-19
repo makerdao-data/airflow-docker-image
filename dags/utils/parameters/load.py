@@ -351,8 +351,8 @@ def fetch_params(engine, setup) -> pd.DataFrame:
         select sd.block, sd.timestamp, sd.tx_hash,
         'FLIPPER.tau' as parameter,
         f.ilk,
-        maker.public.prot_params_etl_hextobigint(left(sd.prev_value, 6))::integer as from_value,
-        maker.public.prot_params_etl_hextobigint(left(sd.curr_value, 6))::integer as to_value
+        maker.public.prot_params_etl_hextobigint(substr(sd.prev_value, 1, len(sd.prev_value)-12)) as from_value,
+        maker.public.prot_params_etl_hextobigint(substr(sd.curr_value, 1, len(sd.curr_value)-12)) as to_value
         from edw_share.raw.storage_diffs sd, maker.internal.flippers f
         where sd.contract = f.address and
         sd.status and
@@ -364,8 +364,8 @@ def fetch_params(engine, setup) -> pd.DataFrame:
         select sd.block, sd.timestamp, sd.tx_hash,
         'FLIPPER.ttl' as parameter,
         f.ilk,
-        maker.public.prot_params_etl_hextobigint(right(prev_value, 4))::integer as from_value,
-        maker.public.prot_params_etl_hextobigint(right(curr_value, 4))::integer as to_value
+        maker.public.prot_params_etl_hextobigint(right(prev_value, 12)) as from_value,
+        maker.public.prot_params_etl_hextobigint(right(curr_value, 12)) as to_value
         from edw_share.raw.storage_diffs sd, maker.internal.flippers f
         where sd.contract = f.address and
         sd.status and
@@ -388,8 +388,8 @@ def fetch_params(engine, setup) -> pd.DataFrame:
     
     flopper_tau = pd.read_sql(f"""
         select block, timestamp, tx_hash, 'FLOPPER.tau' as parameter, null as ilk,
-        maker.public.prot_params_etl_hextobigint(left(prev_value, 8))::integer as from_value,
-        maker.public.prot_params_etl_hextobigint(left(curr_value, 8))::integer as to_value
+        maker.public.prot_params_etl_hextobigint(substr(prev_value, 1, len(prev_value)-12)) as from_value,
+        maker.public.prot_params_etl_hextobigint(substr(curr_value, 1, len(curr_value)-12)) as to_value
         from edw_share.raw.storage_diffs 
             where LOCATION = '6' 
             and contract = '0xa41b6ef151e06da0e34b009b86e828308986736d'
@@ -399,8 +399,8 @@ def fetch_params(engine, setup) -> pd.DataFrame:
     
     flapper_tau = pd.read_sql(f"""
         select block, timestamp, tx_hash, 'FLAPPER.tau' as parameter, null as ilk,
-        maker.public.prot_params_etl_hextobigint(left(prev_value, 8))::integer as from_value,
-        maker.public.prot_params_etl_hextobigint(left(curr_value, 8))::integer as to_value
+        maker.public.prot_params_etl_hextobigint(substr(prev_value, 1, len(prev_value)-12)) as from_value,
+        maker.public.prot_params_etl_hextobigint(substr(curr_value, 1, len(curr_value)-12)) as to_value
         from edw_share.raw.storage_diffs 
             where contract = '0xc4269cc7acdedc3794b221aa4d9205f564e27f0d' 
             and location = '5'
