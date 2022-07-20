@@ -3,7 +3,10 @@ import pandas as pd
 import sys
 sys.path.append('/opt/airflow/')
 from dags.connectors.sf import sf, sa
-from dags.utils.parameters.load_clippers_flippers import load_clips_flips
+from dags.utils.parameters.load_clippers import load_clips
+from dags.utils.parameters.load_flippers import load_flips
+from dags.utils.parameters.load_floppers import load_flops
+from dags.utils.parameters.load_flappers import load_flaps
 from dags.connectors.sf import _write_to_stage, _write_to_table, _clear_stage
 
 
@@ -557,8 +560,11 @@ def apply_sources(protocol_params: pd.DataFrame, engine) -> pd.DataFrame:
 
 def _load(engine, **setup):
 
-    # Fetch Clippers & Flippers
-    load_clips_flips(**setup)
+    # Fetch Clippers & Flippers & Flappers & Floppers
+    load_clips(**setup)
+    load_flips(**setup)
+    load_flaps(**setup)
+    load_flops(**setup)
 
     # Fetch result dataframe
     protocol_params = fetch_params(engine, setup)
