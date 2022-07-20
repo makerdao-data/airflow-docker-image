@@ -23,23 +23,6 @@ def load_clips(**setup):
         """
     )
 
-    sf.execute(f"""
-        insert into maker.internal.clippers
-        select distinct maker.public.cf_etl_hextostr(substr(sd.location, 3, 42)) as ilk,
-        concat('0x', lpad(ltrim(sd.curr_value, '0x'), 40, '0')) as address,
-        sd.block,
-        concat('0x', lpad(ltrim(sd.tx_hash, '0x'), 64, '0')) as tx_hash,
-        concat('0x', lpad(ltrim(txs.to_address, '0x'), 40, '0')) as DssSpell
-        from edw_share.raw.storage_diffs sd, edw_share.raw.transactions txs
-        where sd.tx_hash = txs.tx_hash and
-        sd.contract = '0x135954d155898d42c90d2a57824c690e0c7bef1b' and
-        sd.location like '1[%' and
-        substr(sd.location, length(sd.location)) = '0' and
-        sd.status and
-        sd.block > {setup['start_block']} and
-        sd.block <= {setup['end_block']};
-    """)
-
     clippers = sf.execute(f"""
         select distinct maker.public.cf_etl_hextostr(substr(sd.location, 3, 42)) as ilk,
         concat('0x', lpad(ltrim(sd.curr_value, '0x'), 40, '0')) as address,
