@@ -1,6 +1,8 @@
 import pandas as pd
 
 import sys
+
+from setuptools import SetuptoolsDeprecationWarning
 sys.path.append('/opt/airflow/')
 from dags.connectors.sf import sf, sa
 from dags.utils.parameters.load_clippers import load_clips
@@ -525,32 +527,51 @@ def load_lerps(sf, **setup) -> pd.DataFrame:
     Fetch list of lerps for source identification
     """
 
-    # Read lerps from edw
-    lerps = sf.execute(f"""
+    def fetch_lerps(sf, LerpFactory, s, e):
+        
+        return sf.execute(f"""
         // Fetching all LERP addresses
         SELECT block, timestamp, concat('0x', lpad(ltrim(tx_hash, '0x'), 64, '0')) as tx_hash,
         concat('0x', lpad(ltrim(to_address, '0x'), 40, '0')) as lerp
         FROM edw_share.raw.calls
-        WHERE from_address = '0x9175561733d138326fdea86cdfdf53e92b588276'
-        AND block > {setup['start_block']}
-        AND block <= {setup['end_block']}
+        WHERE from_address = '{LerpFactory}'
+        AND block > {s}
+        AND block <= {e}
         AND tx_hash in (SELECT tx_hash
                         FROM edw_share.raw.state_diffs
                         WHERE reason = 'contract creation'
-                        AND block > {setup['start_block']}
-                        AND block <= {setup['end_block']});
-    """).fetchall()
+                        AND block > {s}
+                        AND block <= {e});
+        """).fetchall()
 
-    if lerps:
-        pattern = _write_to_stage(sf, lerps, f"MAKER.PUBLIC.PARAMETERS_STORAGE")
-        if pattern:
-            _write_to_table(
-                sf,
-                f"MAKER.PUBLIC.PARAMETERS_STORAGE",
-                f"MAKER.INTERNAL.LERPS",
-                pattern,
-            )
-            _clear_stage(sf, f"MAKER.PUBLIC.PARAMETERS_STORAGE", pattern)
+    if setup['start_block'] < 13664911:
+
+        lerps = fetch_lerps(sf, '0x00b416da876fe42dd02813da435cc030f0d72434', setup['start_block'], setup['end_block'])
+
+        if lerps:
+            pattern = _write_to_stage(sf, lerps, f"MAKER.PUBLIC.PARAMETERS_STORAGE")
+            if pattern:
+                _write_to_table(
+                    sf,
+                    f"MAKER.PUBLIC.PARAMETERS_STORAGE",
+                    f"MAKER.INTERNAL.LERPS",
+                    pattern,
+                )
+                _clear_stage(sf, f"MAKER.PUBLIC.PARAMETERS_STORAGE", pattern)
+    else:
+
+        lerps = fetch_lerps(sf, '0x9175561733d138326fdea86cdfdf53e92b588276', setup['start_block'], setup['end_block'])
+    
+        if lerps:
+            pattern = _write_to_stage(sf, lerps, f"MAKER.PUBLIC.PARAMETERS_STORAGE")
+            if pattern:
+                _write_to_table(
+                    sf,
+                    f"MAKER.PUBLIC.PARAMETERS_STORAGE",
+                    f"MAKER.INTERNAL.LERPS",
+                    pattern,
+                )
+                _clear_stage(sf, f"MAKER.PUBLIC.PARAMETERS_STORAGE", pattern)
 
     return
 
