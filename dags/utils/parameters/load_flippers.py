@@ -52,9 +52,9 @@ def load_flips(**setup):
     for block, timestamp, tx_hash, ilk, address, source in flippers:
 
         load_flippers.append([block, tx_hash, ilk, address])
-        load_flippers_parameters.append([block, timestamp, tx_hash, source, 'FLIPPER.beg', ilk, 0, beg, 'dssspell'])
-        load_flippers_parameters.append([block, timestamp, tx_hash, source, 'FLIPPER.ttl', ilk, 0, ttl, 'dssspell'])
-        load_flippers_parameters.append([block, timestamp, tx_hash, source, 'FLIPPER.tau', ilk, 0, tau, 'dssspell'])
+        load_flippers_parameters.append([block, timestamp, tx_hash, source, 'FLIPPER.beg', ilk, 0, beg, 'DssSpell'])
+        load_flippers_parameters.append([block, timestamp, tx_hash, source, 'FLIPPER.ttl', ilk, 0, ttl, 'DssSpell'])
+        load_flippers_parameters.append([block, timestamp, tx_hash, source, 'FLIPPER.tau', ilk, 0, tau, 'DssSpell'])
 
     if load_flippers:
         pattern = _write_to_stage(sf, load_flippers, f"MAKER.PUBLIC.PARAMETERS_STORAGE")

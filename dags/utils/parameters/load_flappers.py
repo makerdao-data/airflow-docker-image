@@ -11,7 +11,7 @@ def load_flaps(**setup):
     flappers = sf.execute(f"""
         select block, timestamp, tx_hash, to_address
         from edw_share.raw.calls
-        where to_address = '0x920ff284ce06eef00082acb1e12617188c928f99'
+        where to_address = '0xa4f79bc4a5612bdda35904fdf55fc4cb53d1bff6'
         and left(call_data, 10) = '0x60806040'
         and status
         and block > {setup['start_block']}
@@ -28,9 +28,9 @@ def load_flaps(**setup):
 
     for block, timestamp, tx_hash, to_address in flappers:
 
-        load_flapper_params.append([block, timestamp, tx_hash, None, 'FLAPPER.beg', None, 0, beg, None])
-        load_flapper_params.append([block, timestamp, tx_hash, None, 'FLAPPER.ttl', None, 0, ttl, None])
-        load_flapper_params.append([block, timestamp, tx_hash, None, 'FLAPPER.tau', None, 0, tau, None])
+        load_flapper_params.append([block, timestamp, tx_hash, to_address, 'FLAPPER.beg', None, 0, beg, 'Create: Flapper'])
+        load_flapper_params.append([block, timestamp, tx_hash, to_address, 'FLAPPER.ttl', None, 0, ttl, 'Create: Flapper'])
+        load_flapper_params.append([block, timestamp, tx_hash, to_address, 'FLAPPER.tau', None, 0, tau, 'Create: Flapper'])
 
         sf.execute(f"""
             INSERT INTO MAKER.INTERNAL.FLAPPERS(BLOCK, TIMESTAMP, TX_HASH, ADDRESS)

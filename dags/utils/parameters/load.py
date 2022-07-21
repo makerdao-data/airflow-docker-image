@@ -503,43 +503,62 @@ def apply_source_types(protocol_params: pd.DataFrame, engine) -> pd.DataFrame:
     """
 
     # Fetch contextual data
-    lerps = fetch_lerps(engine)
+    lerps = pd.read_sql(f"""
+        SELECT LERP
+        FROM MAKER.INTERNAL.LERPS;
+    """, engine)
 
     # Iterate through rows and populate source column
     for idx in range(len(protocol_params)):
-        if 'IAM' in protocol_params.loc[idx, 'PARAMETER']:
-            protocol_params.loc[idx, 'SOURCE_TYPE'] = 'DC-IAM'
-        elif protocol_params.loc[idx, 'SOURCE'] in lerps.TO_ADDRESS.values:
-            protocol_params.loc[idx, 'SOURCE_TYPE'] = 'lerp'
+        if protocol_params.loc[idx, 'SOURCE'] == '0xc7bdd1f2b16447dcf3de045c4a039a60ec2f0ba3':
+            protocol_params.loc[idx, 'SOURCE_TYPE'] = 'DssAutoLine'
+        elif protocol_params.loc[idx, 'SOURCE'] in lerps.LERP.values:
+            protocol_params.loc[idx, 'SOURCE_TYPE'] = 'Lerp'
         else:
-            protocol_params.loc[idx, 'SOURCE_TYPE'] = 'dsspell'
+            protocol_params.loc[idx, 'SOURCE_TYPE'] = 'DssSpell'
 
     return protocol_params
 
 
-def fetch_lerps(engine) -> pd.DataFrame:
+def load_lerps(sf, **setup) -> pd.DataFrame:
     """
     Fetch list of lerps for source identification
     """
 
     # Read lerps from edw
-    lerps = pd.read_sql("""
+    lerps = sf.execute(f"""
         // Fetching all LERP addresses
-        SELECT to_address
+        SELECT block, timestamp, concat('0x', lpad(ltrim(tx_hash, '0x'), 64, '0')) as tx_hash,
+        concat('0x', lpad(ltrim(to_address, '0x'), 40, '0')) as lerp
         FROM edw_share.raw.calls
         WHERE from_address = '0x9175561733d138326fdea86cdfdf53e92b588276'
-        AND tx_hash in (SELECT tx_hash FROM edw_share.raw.state_diffs WHERE reason = 'contract creation');
-    """, engine)
+        AND block > {setup['start_block']}
+        AND block <= {setup['end_block']}
+        AND tx_hash in (SELECT tx_hash
+                        FROM edw_share.raw.state_diffs
+                        WHERE reason = 'contract creation'
+                        AND block > {setup['start_block']}
+                        AND block <= {setup['end_block']});
+    """).fetchall()
 
-    return lerps
+    if lerps:
+        pattern = _write_to_stage(sf, lerps, f"MAKER.PUBLIC.PARAMETERS_STORAGE")
+        if pattern:
+            _write_to_table(
+                sf,
+                f"MAKER.PUBLIC.PARAMETERS_STORAGE",
+                f"MAKER.INTERNAL.LERPS",
+                pattern,
+            )
+            _clear_stage(sf, f"MAKER.PUBLIC.PARAMETERS_STORAGE", pattern)
+
+    return
 
 
 def apply_sources(protocol_params: pd.DataFrame, engine) -> pd.DataFrame:
     """
     Function to fetch contract sources
     """
-
-    print(protocol_params)
 
     # Fetch contract sources
     sources = pd.read_sql(
@@ -566,6 +585,8 @@ def _load(engine, **setup):
     load_flaps(**setup)
     load_flops(**setup)
 
+    load_lerps(sf, **setup)
+
     # Fetch result dataframe
     protocol_params = fetch_params(engine, setup)
 
@@ -589,7 +610,7 @@ def _load(engine, **setup):
         # 'FROM_VALUE': 2873530165.138446, 
         # 'TO_VALUE': 2875565887.508294, 
         # 'SOURCE': '0x315ba6fbd305fcc41d0febe6698c4144c903c24a', 
-        # 'SOURCE_TYPE': 'dsspell'
+        # 'SOURCE_TYPE': 'DssSpell'
         # }
 
         # for block, timestamp, tx_hash, parameter, ilk, from_value, to_value, source, source_type in protocol_params.values.tolist():

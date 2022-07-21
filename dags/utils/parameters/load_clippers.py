@@ -51,7 +51,7 @@ def load_clips(**setup):
     for ilk, address, block, timestamp, tx_hash, DssSpell in clippers:
 
         load_clippers.append([ilk, address, block, tx_hash, DssSpell])
-        load_clippers_params.append([block, timestamp, tx_hash, DssSpell, 'CLIPPER.buf', ilk, 0, 1, 'dssspell'])
+        load_clippers_params.append([block, timestamp, tx_hash, DssSpell, 'CLIPPER.buf', ilk, 0, 1, 'DssSpell'])
 
     if load_clippers:
         pattern = _write_to_stage(sf, load_clippers, f"MAKER.PUBLIC.PARAMETERS_STORAGE")
