@@ -1,8 +1,7 @@
 import pandas as pd
-
 import sys
+from web3 import Web3
 
-from setuptools import SetuptoolsDeprecationWarning
 sys.path.append('/opt/airflow/')
 from dags.connectors.sf import sf, sa
 from dags.utils.parameters.load_clippers import load_clips
@@ -10,6 +9,7 @@ from dags.utils.parameters.load_flippers import load_flips
 from dags.utils.parameters.load_floppers import load_flops
 from dags.utils.parameters.load_flappers import load_flaps
 from dags.connectors.sf import _write_to_stage, _write_to_table, _clear_stage
+
 
 
 def fetch_params(engine, setup) -> pd.DataFrame:
@@ -510,16 +510,91 @@ def apply_source_types(protocol_params: pd.DataFrame, engine) -> pd.DataFrame:
         FROM MAKER.INTERNAL.LERPS;
     """, engine)
 
+    spells = pd.read_sql("""
+        SELECT CODE
+        FROM MCD.INTERNAL.YAYS
+        WHERE length(CODE) = 42;
+    """, engine)
+
+    dssautoline = pd.read_sql(f"""
+        SELECT TX_HASH
+        FROM MAKER.INTERNAL.DSSAUTOLINE;
+    """, engine)
+
     # Iterate through rows and populate source column
     for idx in range(len(protocol_params)):
-        if protocol_params.loc[idx, 'SOURCE'] == '0xc7bdd1f2b16447dcf3de045c4a039a60ec2f0ba3':
+
+        if protocol_params.loc[idx, 'SOURCE'] in spells.CODE.values:
+            protocol_params.loc[idx, 'SOURCE_TYPE'] = 'DssSpell'
+        elif protocol_params.loc[idx, 'TX_HASH'] in dssautoline.TX_HASH.values:
             protocol_params.loc[idx, 'SOURCE_TYPE'] = 'DssAutoLine'
+        elif protocol_params.loc[idx, 'SOURCE'] in ['0xc7bdd1f2b16447dcf3de045c4a039a60ec2f0ba3', '0x8f235dd319ef8637964271a9477234f62b02cb59', '0x315ba6fbd305fcc41d0febe6698c4144c903c24a']:
+            protocol_params.loc[idx, 'SOURCE_TYPE'] = 'DssAutoLine'
+        elif protocol_params.loc[idx, 'SOURCE'] == '0x9175561733d138326fdea86cdfdf53e92b588276':
+            protocol_params.loc[idx, 'SOURCE_TYPE'] = 'LerpFactory'
+        elif protocol_params.loc[idx, 'SOURCE'] == '0x1b93556ab8dccef01cd7823c617a6d340f53fb58':
+            protocol_params.loc[idx, 'SOURCE_TYPE'] = 'Maker: Proxy Deployer'
         elif protocol_params.loc[idx, 'SOURCE'] in lerps.LERP.values:
             protocol_params.loc[idx, 'SOURCE_TYPE'] = 'Lerp'
         else:
-            protocol_params.loc[idx, 'SOURCE_TYPE'] = 'DssSpell'
+            protocol_params.loc[idx, 'SOURCE_TYPE'] = 'Unknown'
 
     return protocol_params
+
+
+def breadcrumb(call_id):
+
+    if call_id:
+        output = []
+        for i in call_id.split('_'):
+            output.append(i.zfill(3))
+
+        return '_'.join(map(str, output))
+    else:
+        return '000'
+
+
+def load_dssautoline(sf, **setup):
+
+    CONTRACT = '0xc7bdd1f2b16447dcf3de045c4a039a60ec2f0ba3'
+
+    DSALE = sf.execute(f"""
+        select block, timestamp, tx_hash, log_index, call_id, log_data, topic1
+        from edw_share.raw.events
+        where contract = '{CONTRACT}'
+        and topic0 = '0x2696a4655cbecf97fdc3c9c74f3eba424f2e404790389c2b4e31d2e32129c7dc'
+        and status;
+    """).fetchall()
+
+    DssAutoLineEvents = list()
+
+    for block, timestamp, tx_hash, log_index, call_id, log_data, topic1 in DSALE:
+
+        DssAutoLineEvents.append([
+            block,
+            timestamp,
+            tx_hash,
+            CONTRACT,
+            log_index,
+            breadcrumb(call_id),
+            Web3.toText(topic1).strip('\x00'),
+            str(int('0x' + log_data[2:len(log_data)-64], 16)),
+            str(int('0x' + log_data[len(log_data)-64:len(log_data)], 16)),
+            int('0x' + log_data[2:len(log_data)-64], 16) / 10**45,
+            int('0x' + log_data[len(log_data)-64:len(log_data)], 16) / 10**45
+        ])
+
+    pattern = None
+    if DssAutoLineEvents:
+        pattern = _write_to_stage(sf, DssAutoLineEvents, f"MAKER.PUBLIC.PARAMETERS_STORAGE")
+
+        _write_to_table(
+            sf,
+            f"MAKER.PUBLIC.PARAMETERS_STORAGE",
+            f"maker.internal.dssautoline",
+            pattern,
+        )
+        _clear_stage(sf, f"MAKER.PUBLIC.PARAMETERS_STORAGE", pattern)
 
 
 def load_lerps(sf, **setup) -> pd.DataFrame:
