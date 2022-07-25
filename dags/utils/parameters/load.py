@@ -591,7 +591,7 @@ def load_dssautoline(sf, **setup):
         _write_to_table(
             sf,
             f"MAKER.PUBLIC.PARAMETERS_STORAGE",
-            f"maker.internal.dssautoline",
+            f"MAKER.INTERNAL.DSSAUTOLINE",
             pattern,
         )
         _clear_stage(sf, f"MAKER.PUBLIC.PARAMETERS_STORAGE", pattern)
