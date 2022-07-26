@@ -1,6 +1,9 @@
 import pandas as pd
 import sys
 from web3 import Web3
+import requests
+import json
+import time
 
 sys.path.append('/opt/airflow/')
 from dags.connectors.sf import sf, sa
@@ -521,23 +524,66 @@ def apply_source_types(protocol_params: pd.DataFrame, engine) -> pd.DataFrame:
         FROM MAKER.INTERNAL.DSSAUTOLINE;
     """, engine)
 
+    govactions = pd.read_sql(f"""
+        SELECT TX_HASH
+        FROM MAKER.INTERNAL.GOVACTIONS;
+    """, engine)
+
     # Iterate through rows and populate source column
     for idx in range(len(protocol_params)):
 
         if protocol_params.loc[idx, 'SOURCE'] in spells.CODE.values:
             protocol_params.loc[idx, 'SOURCE_TYPE'] = 'DssSpell'
+
         elif protocol_params.loc[idx, 'TX_HASH'] in dssautoline.TX_HASH.values:
             protocol_params.loc[idx, 'SOURCE_TYPE'] = 'DssAutoLine'
-        elif protocol_params.loc[idx, 'SOURCE'] in ['0xc7bdd1f2b16447dcf3de045c4a039a60ec2f0ba3', '0x8f235dd319ef8637964271a9477234f62b02cb59', '0x315ba6fbd305fcc41d0febe6698c4144c903c24a']:
+        
+        elif protocol_params.loc[idx, 'TX_HASH'] in govactions.TX_HASH.values:
+            protocol_params.loc[idx, 'SOURCE_TYPE'] = 'GovActions'
+
+        elif protocol_params.loc[idx, 'SOURCE'] == '0xc7bdd1f2b16447dcf3de045c4a039a60ec2f0ba3':
             protocol_params.loc[idx, 'SOURCE_TYPE'] = 'DssAutoLine'
-        elif protocol_params.loc[idx, 'SOURCE'] == '0x9175561733d138326fdea86cdfdf53e92b588276':
+
+        elif protocol_params.loc[idx, 'SOURCE'] == '0x7b3799b30f268ba55f926d7f714a3001af89d359':
+            protocol_params.loc[idx, 'SOURCE_TYPE'] = 'IlkLerp'
+        
+        elif protocol_params.loc[idx, 'SOURCE'] in ['0x00b416da876fe42dd02813da435cc030f0d72434', '0x9175561733d138326fdea86cdfdf53e92b588276']:
             protocol_params.loc[idx, 'SOURCE_TYPE'] = 'LerpFactory'
-        elif protocol_params.loc[idx, 'SOURCE'] == '0x1b93556ab8dccef01cd7823c617a6d340f53fb58':
-            protocol_params.loc[idx, 'SOURCE_TYPE'] = 'Maker: Proxy Deployer'
+        
+        elif protocol_params.loc[idx, 'SOURCE'] in ['0x0239311b645a8ef91dc899471497732a1085ba8b', '0x8089e7833b6c39583cd79c67329c6b5628dc1885', '0x4d6a5e39523ec6068ab91cc82e75ccabb77dfdca', '0xa0b7703b041e3b12af3ffd4d8f22741ec00df40d', '0xe5252addbb3c22a796605337ec6a9b6a734e6dcd', '0xcbb642c1e71ecd8b69c4fe88b299c6c6e446072d', '0xe622385a7a710301dd48864cff2f0a8f288d7e86', '0xda9ceccfef0a0f975a062da0b3a8596a9dc20f42']:
+            protocol_params.loc[idx, 'SOURCE_TYPE'] = 'Lerp'
+
         elif protocol_params.loc[idx, 'SOURCE'] in lerps.LERP.values:
             protocol_params.loc[idx, 'SOURCE_TYPE'] = 'Lerp'
+        
+        elif protocol_params.loc[idx, 'SOURCE'] in [contract[0] for contract in sf.execute(f"""SELECT CONTRACT FROM MAKER.INTERNAL.SOURCES;""").fetchall()]:
+
+            protocol_params.loc[idx, 'SOURCE_TYPE'] = sf.execute(f"""
+                SELECT NAME
+                FROM MAKER.INTERNAL.SOURCES
+                WHERE CONTRACT = '{protocol_params.loc[idx, 'SOURCE']}';
+            """).fetchone()[0]
+
         else:
-            protocol_params.loc[idx, 'SOURCE_TYPE'] = 'Unknown'
+
+            URL = f"""https://api.etherscan.io/api?module=contract&action=getsourcecode&address={str(protocol_params.loc[idx, 'SOURCE'])}&apikey=E2H9SJKUISHBJD75U86HHKFGANT26CDYSR"""
+            r = requests.get(URL)
+
+            if r.status_code == 200:
+
+                r = json.loads(r.text)
+                protocol_params.loc[idx, 'SOURCE_TYPE'] = r['result'][0]['ContractName']
+
+                sf.execute(f"""
+                    INSERT INTO MAKER.INTERNAL.SOURCES(CONTRACT, NAME)
+                    VALUES ('{str(protocol_params.loc[idx, 'SOURCE'])}', '{str(r['result'][0]['ContractName'])}');
+                """)
+
+                time.sleep(3)
+
+            else:
+
+                protocol_params.loc[idx, 'SOURCE_TYPE'] = 'Unknown'
 
     return protocol_params
 
@@ -554,6 +600,38 @@ def breadcrumb(call_id):
         return '000'
 
 
+def load_govactions(sf, **setup):
+
+    CONTRACT = '0x4f5f0933158569c026d617337614d00ee6589b6e'
+    
+    GOVACTIONS = sf.execute(f"""
+        select block, timestamp, tx_hash, from_address, to_address
+        from edw_share.raw.calls
+        where to_address = '{CONTRACT}'
+        and left(call_data, 10) = '0xb7beac59'
+        and block > {setup['start_block']} and block <= {setup['end_block']}
+        and status;
+    """).fetchall()
+
+    ga = list()
+
+    for block, timestamp, tx_hash, from_address, to_address in GOVACTIONS:
+
+        ga.append([block, timestamp, tx_hash, from_address, to_address])
+    
+    pattern = None
+    if ga:
+        pattern = _write_to_stage(sf, ga, f"MAKER.PUBLIC.PARAMETERS_STORAGE")
+
+        _write_to_table(
+            sf,
+            f"MAKER.PUBLIC.PARAMETERS_STORAGE",
+            f"MAKER.INTERNAL.GOVACTIONS",
+            pattern,
+        )
+        _clear_stage(sf, f"MAKER.PUBLIC.PARAMETERS_STORAGE", pattern)
+
+
 def load_dssautoline(sf, **setup):
 
     CONTRACT = '0xc7bdd1f2b16447dcf3de045c4a039a60ec2f0ba3'
@@ -563,6 +641,7 @@ def load_dssautoline(sf, **setup):
         from edw_share.raw.events
         where contract = '{CONTRACT}'
         and topic0 = '0x2696a4655cbecf97fdc3c9c74f3eba424f2e404790389c2b4e31d2e32129c7dc'
+        and block > {setup['start_block']} and block <= {setup['end_block']}
         and status;
     """).fetchall()
 
@@ -682,6 +761,8 @@ def _load(engine, **setup):
     load_flops(**setup)
 
     load_lerps(sf, **setup)
+    load_dssautoline(sf, **setup)
+    load_govactions(sf, **setup)
 
     # Fetch result dataframe
     protocol_params = fetch_params(engine, setup)
