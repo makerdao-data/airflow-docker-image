@@ -4,7 +4,6 @@ import os, sys
 
 sys.path.append('/opt/airflow/')
 
-from dags.utils.parameters.load_extension import upload_new_params
 from dags.connectors.sf import connection as engine
 from dags.connectors.chain import chain
 from dags.utils.parameters.setup import _setup
@@ -26,7 +25,7 @@ default_args = {
 # [START instantiate_dag]
 @dag(
     default_args=default_args,
-    schedule_interval=None, #'15 */6 * * *',
+    schedule_interval='15 */6 * * *',
     start_date=datetime(2022, 2, 17, 10),
     max_active_runs=1,
     catchup=False,
@@ -47,15 +46,8 @@ def prod_parameters_load():
 
         return
     
-    @task()
-    def load_ext(task_dependency, setup):
-
-        upload_new_params(engine, chain, **setup)
-
-        return
 
     setup = setup()
-    # load_ext(setup, setup)
     load(setup, setup, engine)
 
 
