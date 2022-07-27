@@ -6,8 +6,9 @@ def _setup():
 
     fallback_block = 8928151
     load_id = datetime.utcnow().__str__()[:19]
-    scheduler = 'maker.scheduler.test_parameters'
-    target_db = 'maker.public.test_parameters_v2'
+    scheduler = 'maker.scheduler.parameters'
+    target_db = 'maker.public.parameters'
+
 
     start_block = sf.execute(
         f"""

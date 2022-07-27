@@ -4,6 +4,7 @@ from web3 import Web3
 import requests
 import json
 import time
+import os
 
 sys.path.append('/opt/airflow/')
 from dags.connectors.sf import sf, sa
@@ -12,7 +13,6 @@ from dags.utils.parameters.load_flippers import load_flips
 from dags.utils.parameters.load_floppers import load_flops
 from dags.utils.parameters.load_flappers import load_flaps
 from dags.connectors.sf import _write_to_stage, _write_to_table, _clear_stage
-
 
 
 def fetch_params(engine, setup) -> pd.DataFrame:
@@ -566,7 +566,7 @@ def apply_source_types(protocol_params: pd.DataFrame, engine) -> pd.DataFrame:
 
         else:
 
-            URL = f"""https://api.etherscan.io/api?module=contract&action=getsourcecode&address={str(protocol_params.loc[idx, 'SOURCE'])}&apikey=E2H9SJKUISHBJD75U86HHKFGANT26CDYSR"""
+            URL = f"""https://api.etherscan.io/api?module=contract&action=getsourcecode&address={str(protocol_params.loc[idx, 'SOURCE'])}&apikey={os.environ.get('ETHERSCAN_API_KEY')}"""
             r = requests.get(URL)
 
             if r.status_code == 200:
