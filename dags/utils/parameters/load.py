@@ -743,6 +743,7 @@ def apply_sources(protocol_params: pd.DataFrame, engine) -> pd.DataFrame:
         engine
     )
 
+
     # Apply contract sources and create source type column
     protocol_params['SOURCE'] = protocol_params.TX_HASH.apply(
         lambda x: sources[sources.TX_HASH == x].values[0][1]

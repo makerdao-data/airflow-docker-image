@@ -17,16 +17,15 @@ import os, sys
 sys.path.append('/opt/airflow/')
 from dags.utils.liq20.updater import rounds_auctions
 from dags.utils.liq20.clip import get_clipper_calls
-from dags.utils.liq20.actions import get_clipper_actions
+from dags.utils.liq20.actions import clips_into_db
 from dags.utils.liq20.dog import get_dog_calls
-from dags.utils.liq20.barks import get_barks
+from dags.utils.liq20.barks import barks_into_db
 from dags.utils.liq20.clippers import update_clippers
+from dags.utils.liq20.test import liquidations_test
 from dags.connectors.sf import sf
 from dags.connectors.chain import chain
 from dags.connectors.gcp import bq_query
-from config import liquidations_db, STAGING
 
-DB = liquidations_db
 
 # [START default_args]
 # These args will get passed on to each operator
@@ -49,129 +48,110 @@ default_args = {
     catchup=False,
 )
 def mainnet_liquidations20():
+
     @task(multiple_outputs=True)
     def intro(DB=None):
 
         load_id = datetime.utcnow().__str__()[:19]
         proc_start = load_id
 
-        q = f"""SELECT max(end_block), max(proc_start)
-                FROM {DB}.internal.scheduler
-                WHERE status = 1; """
+        q = f"""
+            SELECT max(end_block), max(proc_start)
+            FROM {DB}.internal.scheduler
+            WHERE status = 1;
+        """
 
         last_parsed_block = sf.execute(q).fetchone()
+
         if last_parsed_block[0] and last_parsed_block[1]:
             start_block = last_parsed_block[0] + 1
             block_timestamp = chain.eth.get_block(start_block)['timestamp']
             start_time = datetime.utcfromtimestamp(block_timestamp).__str__()[:19]
         else:
-            start_block = 12316360
-            start_time = '2021-04-26 14:02:08'
+            start_block = 12246413
+            start_time = '2021-04-15 00:00:00'
 
-        # prevent from running ahead of mcd.internal.prices data (needed for loading {DB}.internal.action)
-        end_block, end_time = sf.execute(
-            """
-                SELECT MAX(block), MAX(timestamp)
-                FROM mcd.staging.blocks; """
-        ).fetchone()
+        # prevent from running ahead of mcd.internal.prices data
+        # needed for loading liquidations.internal.action
+        end_block, end_time = sf.execute(f"""
+            SELECT MAX(block), MAX(timestamp)
+            FROM mcd.staging.blocks;
+        """).fetchone()
 
         end_time = end_time.__str__()[:19]
 
-        q = f"""INSERT INTO {DB}.internal.scheduler(load_id, proc_start, start_block, end_block)
-                VALUES('{load_id}', '{proc_start}', {start_block}, {end_block}); """
+        q = f"""
+            INSERT INTO {DB}.internal.scheduler(load_id, proc_start, start_block, end_block)
+            VALUES('{load_id}', '{proc_start}', {start_block}, {end_block});
+        """
 
         sf.execute(q)
 
-        starter = dict(
+        setup = dict(
             load_id=load_id,
             start_block=start_block,
             end_block=end_block,
             start_time=start_time,
             end_time=end_time,
-            DB=DB,
-            STAGING=STAGING,
+            DB=f'{DB}',
+            STAGING=f'{DB}.STAGING.LIQUIDATIONS_EXTRACTS',
         )
 
-        return starter
+        print(setup)
+
+        return setup
+
 
     @task()
-    def clippers(task_dependency=None, load_id=None, DB=None):
-        update_clippers(load_id=load_id, DB=DB)
+    def clippers(task_dependency, setup):
 
-        return True
+        update_clippers(**setup)
+
+        return
+
 
     @task(multiple_outputs=True)
-    def dog_calls(
-        task_dependency=None,
-        load_id=None,
-        start_block=None,
-        end_block=None,
-        start_time=None,
-        end_time=None,
-        DB=None,
-        STAGING=None,
-    ):
-        calls = get_dog_calls(load_id, start_block, end_block, start_time, end_time, DB, STAGING)
-        return calls
+    def dog_calls(task_dependency, setup):
+
+        dc = get_dog_calls(**setup)
+        
+        return dc
+
 
     @task()
-    def dog_barks(
-        task_dependency=None,
-        load_id=None,
-        start_block=None,
-        end_block=None,
-        start_time=None,
-        end_time=None,
-        DB=None,
-        STAGING=None,
-    ):
-        get_barks(load_id, start_block, end_block, start_time, end_time, DB, STAGING)
-        return True
+    def dog_barks(task_dependency, setup):
+
+        barks_into_db(**setup)
+
+        return
+
 
     @task(multiple_outputs=True)
-    def clipper_calls(
-        task_dependency=None,
-        load_id=None,
-        start_block=None,
-        end_block=None,
-        start_time=None,
-        end_time=None,
-        DB=None,
-        STAGING=None,
-    ):
-        calls = get_clipper_calls(load_id, start_block, end_block, start_time, end_time, DB, STAGING)
-        return calls
+    def clipper_calls(task_dependency, setup):
+
+        cc = get_clipper_calls(**setup)
+
+        return cc
+
 
     @task()
-    def liquidations_actions(
-        task_dependency=None,
-        load_id=None,
-        start_block=None,
-        end_block=None,
-        start_time=None,
-        end_time=None,
-        DB=None,
-        STAGING=None,
-    ):
-        get_clipper_actions(load_id, start_block, end_block, start_time, end_time, DB, STAGING)
-        return True
+    def liquidations_actions(task_dependency, setup):
+
+        clips_into_db(**setup)
+
+        return
+
 
     @task()
-    def create_rounds_auctions(
-        task_dependency=None,
-        load_id=None,
-        start_block=None,
-        end_block=None,
-        start_time=None,
-        end_time=None,
-        DB=None,
-        STAGING=None,
-    ):
-        rounds_auctions(load_id, start_block, end_block, start_time, end_time, DB, STAGING)
-        return True
+    def create_rounds_auctions(task_dependency, setup):
+        
+        rounds_auctions(**setup)
+
+        return
+
 
     @task()
-    def outro(task_dependency=None, load_id=None, dog_calls=None, clipper_calls=None, DB=None):
+    def outro(task_dependency, load_id, dog_calls, clipper_calls, DB):
 
         status = 1
         end_point = datetime.utcnow()
@@ -184,66 +164,31 @@ def mainnet_liquidations20():
         sf.execute(q)
 
         return True
+    
+    @task()
+    def test(task_dependency, setup):
 
-    starter = intro(DB=DB)
-    new_clippers = clippers(task_dependency=starter, load_id=starter['load_id'], DB=starter['DB'])
-    d_calls = dog_calls(
-        task_dependency=new_clippers,
-        load_id=starter['load_id'],
-        start_block=starter['start_block'],
-        end_block=starter['end_block'],
-        start_time=starter['start_time'],
-        end_time=starter['end_time'],
-        DB=starter['DB'],
-        STAGING=starter['STAGING'],
-    )
-    barks = dog_barks(
-        task_dependency=d_calls,
-        load_id=starter['load_id'],
-        start_block=starter['start_block'],
-        end_block=starter['end_block'],
-        start_time=starter['start_time'],
-        end_time=starter['end_time'],
-        DB=starter['DB'],
-        STAGING=starter['STAGING'],
-    )
-    c_calls = clipper_calls(
-        task_dependency=barks,
-        load_id=starter['load_id'],
-        start_block=starter['start_block'],
-        end_block=starter['end_block'],
-        start_time=starter['start_time'],
-        end_time=starter['end_time'],
-        DB=starter['DB'],
-        STAGING=starter['STAGING'],
-    )
-    actions = liquidations_actions(
-        task_dependency=c_calls,
-        load_id=starter['load_id'],
-        start_block=starter['start_block'],
-        end_block=starter['end_block'],
-        start_time=starter['start_time'],
-        end_time=starter['end_time'],
-        DB=starter['DB'],
-        STAGING=starter['STAGING'],
-    )
-    ra = create_rounds_auctions(
-        task_dependency=actions,
-        load_id=starter['load_id'],
-        start_block=starter['start_block'],
-        end_block=starter['end_block'],
-        start_time=starter['start_time'],
-        end_time=starter['end_time'],
-        DB=starter['DB'],
-        STAGING=starter['STAGING'],
-    )
-    outro = outro(
-        task_dependency=ra,
-        load_id=starter['load_id'],
+        liquidations_test(**setup)
+
+        return
+
+
+    setup = intro(DB='LIQUIDATIONS')
+
+    new_clippers = clippers(setup, setup)
+    d_calls = dog_calls(new_clippers, setup)
+    barks = dog_barks(d_calls, setup)
+    c_calls = clipper_calls(barks, setup)
+    actions = liquidations_actions(c_calls, setup)
+    ra = create_rounds_auctions(actions, setup)
+    o = outro(
+        ra,
+        load_id=setup['load_id'],
         dog_calls=d_calls['calls'],
         clipper_calls=c_calls['calls'],
-        DB=starter['DB'],
+        DB=setup['DB'],
     )
+    t = test(o, setup)
 
 
 # [START dag_invocation]

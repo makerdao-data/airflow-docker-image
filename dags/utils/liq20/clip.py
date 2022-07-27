@@ -14,44 +14,46 @@ import json
 import os, sys
 
 sys.path.append('/opt/airflow/')
-from dags.utils.bq_adapters import decode_calls
-from connectors.sf import sf, _write_to_stage, _write_to_table, _clear_stage
+from config import absolute_import_path
+from dags.utils.edw_adapters import edw_decode_calls
+from dags.connectors.sf import sf, _write_to_stage, _write_to_table, _clear_stage
 
 
-def get_clipper_calls(load_id, start_block, end_block, start_time, end_time, DB, STAGING):
+def get_clipper_calls(**setup):
 
-    currentdir = os.path.dirname(os.path.realpath(__file__))
-    parentdir = os.path.dirname(currentdir)
-    gr_parentdir = os.path.dirname(parentdir)
-    path = os.path.join(gr_parentdir, 'connectors/abis/')
-    with open(path + 'clipper.json', 'r') as f:
+    with open(absolute_import_path + 'clip.json', 'r') as f:
         abi = json.load(f)
 
-    if start_block > end_block:
+    if setup['start_block'] > setup['end_block']:
 
         clipper_calls = []
         
     else:
-        c = sf.execute(f"""select lower(clip) from {DB}.internal.clipper; """).fetchall()
-        clippers = []
-        for i in c:
-            clippers.append(i[0])
 
-        clipper_calls = decode_calls(
-            tuple(clippers), abi, load_id, start_block, end_block, start_time, end_time
+        c = sf.execute(f"""
+            select lower(clip)
+            from {setup['DB']}.internal.clipper;
+        """).fetchall()
+
+        clippers = []
+        for clip in c:
+            clippers.append(clip[0])
+
+        clipper_calls = edw_decode_calls(
+            tuple(clippers), abi, setup['load_id'], setup['start_block'], setup['end_block'], setup['start_time'], setup['end_time']
         )
 
         if len(clipper_calls) > 0:
             
-            pattern = _write_to_stage(sf, clipper_calls, f"{DB}.staging.liquidations_extracts")
+            pattern = _write_to_stage(sf, clipper_calls, f"{setup['STAGING']}")
             if pattern:
                 _write_to_table(
                     sf,
-                    f"{DB}.staging.liquidations_extracts",
-                    f"{DB}.staging.clip",
+                    f"{setup['STAGING']}",
+                    f"{setup['DB']}.STAGING.CLIP",
                     pattern,
                 )
-                _clear_stage(sf, f"{DB}.staging.liquidations_extracts", pattern)
+                _clear_stage(sf, f"{setup['STAGING']}", pattern)
 
         print(f'{len(clipper_calls)} rows loaded')
 

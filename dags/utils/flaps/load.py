@@ -5,7 +5,7 @@ def _load(**setup):
 
     sf.execute(
         """
-            create or replace function maker.public.etl_hextoint (s string)
+            create or replace function maker.public.flap_etl_hextoint (s string)
             returns double language JAVASCRIPT
             as
             'if (S !== null && S !== "" && S !== "0x") {
@@ -29,18 +29,18 @@ def _load(**setup):
                     when '0xc959c42b' then 'Deal'
                     end as action,
                     case substr(topic0, 1, 10)
-                    when '0xe6dde59c' then maker.public.etl_hextoint(substr(log_data, 1, 66))
-                    when '0x4b43ed12' then maker.public.etl_hextoint(topic2)
-                    when '0xc959c42b' then maker.public.etl_hextoint(topic2)
+                    when '0xe6dde59c' then maker.public.flap_etl_hextoint(substr(log_data, 1, 66))
+                    when '0x4b43ed12' then maker.public.flap_etl_hextoint(topic2)
+                    when '0xc959c42b' then maker.public.flap_etl_hextoint(topic2)
                     end as id,
                     case substr(topic0, 1, 10)
-                    when '0xe6dde59c' then maker.public.etl_hextoint(substr(log_data, 67, 64)) / pow(10, 45)
-                    when '0x4b43ed12' then maker.public.etl_hextoint(topic3) / pow(10, 45)
+                    when '0xe6dde59c' then maker.public.flap_etl_hextoint(substr(log_data, 67, 64)) / pow(10, 45)
+                    when '0x4b43ed12' then maker.public.flap_etl_hextoint(topic3) / pow(10, 45)
                     when '0xc959c42b' then null
                     end as lot,
                     case substr(topic0, 1, 10)
-                    when '0xe6dde59c' then maker.public.etl_hextoint(substr(log_data, 131, 64)) / pow(10, 45)
-                    when '0x4b43ed12' then maker.public.etl_hextoint(substr(log_data, 139+2*64, 64)) / pow(10, 18)
+                    when '0xe6dde59c' then maker.public.flap_etl_hextoint(substr(log_data, 131, 64)) / pow(10, 45)
+                    when '0x4b43ed12' then maker.public.flap_etl_hextoint(substr(log_data, 139+2*64, 64)) / pow(10, 18)
                     when '0xc959c42b' then null
                     end as bid,
                     case substr(topic0, 1, 10)
