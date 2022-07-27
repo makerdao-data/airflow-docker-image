@@ -167,3 +167,4 @@ gspread_dataframe
 google-api-python-client
 google-auth-httplib2
 google-auth-oauthlib
+snowflake-sqlalchemy==1.2.0

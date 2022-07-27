@@ -11,6 +11,8 @@
 #  limitations under the License.
 
 import snowflake.connector
+from snowflake.sqlalchemy import URL
+from sqlalchemy import create_engine
 from dotenv import load_dotenv
 from random import randint
 from airflow.exceptions import AirflowFailException
@@ -21,10 +23,14 @@ import json
 sys.path.append('/opt/airflow/')
 from config import SNOWFLAKE_CONNECTION
 
+# Snowflake Python Connector
 connection = snowflake.connector.connect(**SNOWFLAKE_CONNECTION)
 sf = connection.cursor()
 sf_dict = connection.cursor(snowflake.connector.DictCursor)
 
+# Snowflake SqlAlchemy Connector
+sa_connection = create_engine(URL(**SNOWFLAKE_CONNECTION))
+sa = sa_connection.connect()
 
 def clear_stage(stage):
     sf.execute("REMOVE @%s" % stage)
