@@ -768,51 +768,54 @@ def _load(engine, **setup):
     # Fetch result dataframe
     protocol_params = fetch_params(engine, setup)
 
-    # Apply sources
-    protocol_params = apply_sources(protocol_params, engine)
+    print(f"""Loading: {len(protocol_params.index)} params""")
 
-    # Apply source types
-    protocol_params = apply_source_types(protocol_params, engine)
+    if len(protocol_params.index):
+        # Apply sources
+        protocol_params = apply_sources(protocol_params, engine)
 
-    # Write to table
-    # protocol_params.to_sql(f"""{setup['target_db'].split('.')[2]}""", sa, schema=f"""{setup['target_db'].split('.')[0] + '.' + setup['target_db'].split('.')[1]}""", index=False, if_exists='append')
+        # Apply source types
+        protocol_params = apply_source_types(protocol_params, engine)
 
-    if not protocol_params.empty:
-        pp = list()
-        # {
-        # 'BLOCK': 13551743, 
-        # 'TIMESTAMP': datetime.datetime(2021, 11, 4, 18, 10, 38), 
-        # 'TX_HASH': '0x5f4de74b2f02b5241141d7510f3d606983937fd68e19f94b1c7cd6f179a185de', 
-        # 'PARAMETER': 'VAT.ilks.line', 
-        # 'ILK': 'ETH-A', 
-        # 'FROM_VALUE': 2873530165.138446, 
-        # 'TO_VALUE': 2875565887.508294, 
-        # 'SOURCE': '0x315ba6fbd305fcc41d0febe6698c4144c903c24a', 
-        # 'SOURCE_TYPE': 'DssSpell'
-        # }
+        # Write to table
+        # protocol_params.to_sql(f"""{setup['target_db'].split('.')[2]}""", sa, schema=f"""{setup['target_db'].split('.')[0] + '.' + setup['target_db'].split('.')[1]}""", index=False, if_exists='append')
 
-        # for block, timestamp, tx_hash, parameter, ilk, from_value, to_value, source, source_type in protocol_params.values.tolist():
-        for d in protocol_params.to_dict('records'):
-            pp.append([
-                int(d['BLOCK']),
-                d['TIMESTAMP'].__str__()[:19],
-                d['TX_HASH'],
-                d['SOURCE'],
-                d['PARAMETER'],
-                d['ILK'],
-                float(d['FROM_VALUE']),
-                float(d['TO_VALUE']),
-                d['SOURCE_TYPE']
-            ])
-        pattern = _write_to_stage(sf, pp, f"MAKER.PUBLIC.PARAMETERS_STORAGE")
-        if pattern:
-            _write_to_table(
-                sf,
-                f"MAKER.PUBLIC.PARAMETERS_STORAGE",
-                f"{setup['target_db'].split('.')[0]}.{setup['target_db'].split('.')[1]}.{setup['target_db'].split('.')[2]}",
-                pattern,
-            )
-            _clear_stage(sf, f"MAKER.PUBLIC.PARAMETERS_STORAGE", pattern)
+        if not protocol_params.empty:
+            pp = list()
+            # {
+            # 'BLOCK': 13551743, 
+            # 'TIMESTAMP': datetime.datetime(2021, 11, 4, 18, 10, 38), 
+            # 'TX_HASH': '0x5f4de74b2f02b5241141d7510f3d606983937fd68e19f94b1c7cd6f179a185de', 
+            # 'PARAMETER': 'VAT.ilks.line', 
+            # 'ILK': 'ETH-A', 
+            # 'FROM_VALUE': 2873530165.138446, 
+            # 'TO_VALUE': 2875565887.508294, 
+            # 'SOURCE': '0x315ba6fbd305fcc41d0febe6698c4144c903c24a', 
+            # 'SOURCE_TYPE': 'DssSpell'
+            # }
+
+            # for block, timestamp, tx_hash, parameter, ilk, from_value, to_value, source, source_type in protocol_params.values.tolist():
+            for d in protocol_params.to_dict('records'):
+                pp.append([
+                    int(d['BLOCK']),
+                    d['TIMESTAMP'].__str__()[:19],
+                    d['TX_HASH'],
+                    d['SOURCE'],
+                    d['PARAMETER'],
+                    d['ILK'],
+                    float(d['FROM_VALUE']),
+                    float(d['TO_VALUE']),
+                    d['SOURCE_TYPE']
+                ])
+            pattern = _write_to_stage(sf, pp, f"MAKER.PUBLIC.PARAMETERS_STORAGE")
+            if pattern:
+                _write_to_table(
+                    sf,
+                    f"MAKER.PUBLIC.PARAMETERS_STORAGE",
+                    f"{setup['target_db'].split('.')[0]}.{setup['target_db'].split('.')[1]}.{setup['target_db'].split('.')[2]}",
+                    pattern,
+                )
+                _clear_stage(sf, f"MAKER.PUBLIC.PARAMETERS_STORAGE", pattern)
 
     sf.execute(
         f"""
